@@ -1,0 +1,242 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════
+   DARK THEME (NK Celje — default)
+   Navy blue + light blue accents + gold
+   ═══════════════════════════════════════════════════════════ */
+:root,
+[data-theme='dark'] {
+  /* Surfaces - deep navy */
+  --bg: #040918;
+  --surface-1: #0a1530;
+  --surface-2: #0f1e44;
+  --surface-3: #152855;
+  --surface-4: #1c3468;
+  --surface-5: #24407d;
+
+  /* Borders */
+  --border: #1a2f60;
+  --border-dim: #24407d;
+  --border-bright: #2f5399;
+
+  /* Text */
+  --text: #eaf1ff;
+  --text-secondary: #9cb2d4;
+  --text-muted: #617ca8;
+  --text-dim: #3d547f;
+
+  /* Accent — light blue */
+  --accent: #4d9fff;
+  --accent-bright: #7fbcff;
+  --accent-dim: #2563eb;
+  --accent-glow: rgba(77, 159, 255, 0.35);
+
+  /* Cyan secondary */
+  --cyan: #22d3ee;
+  --cyan-bright: #67e8f9;
+  --cyan-dim: #0891b2;
+
+  /* Celje Gold */
+  --gold: #f4c430;
+  --gold-bright: #ffd757;
+  --gold-dim: #c99b1b;
+  --gold-glow: rgba(244, 196, 48, 0.4);
+
+  /* Score palette */
+  --score-elite: #10b981;
+  --score-good: #22d3ee;
+  --score-mid: #f4c430;
+  --score-low: #f97316;
+  --score-poor: #ef4444;
+
+  /* Pitch */
+  --pitch-bg: #0e2a18;
+  --pitch-bright: #133623;
+  --pitch-line: rgba(255, 255, 255, 0.35);
+
+  /* Card gradients */
+  --card-bg-a: rgba(13, 24, 55, 0.9);
+  --card-bg-b: rgba(8, 16, 37, 1);
+  --glass-bg: rgba(10, 21, 48, 0.75);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT THEME
+   Soft white backgrounds, deep navy text, Celje gold accents
+   ═══════════════════════════════════════════════════════════ */
+[data-theme='light'] {
+  --bg: #f1f5fc;
+  --surface-1: #ffffff;
+  --surface-2: #eaf1fb;
+  --surface-3: #d8e4f5;
+  --surface-4: #bfd1ec;
+  --surface-5: #a3bde0;
+
+  --border: #d0dff0;
+  --border-dim: #bfd1ec;
+  --border-bright: #7aa0d4;
+
+  --text: #081432;
+  --text-secondary: #385180;
+  --text-muted: #6b82a8;
+  --text-dim: #8fa3c2;
+
+  --accent: #1e3a8a;
+  --accent-bright: #2f55b3;
+  --accent-dim: #15286b;
+  --accent-glow: rgba(30, 58, 138, 0.22);
+
+  --cyan: #0891b2;
+  --cyan-bright: #06b6d4;
+  --cyan-dim: #0e7490;
+
+  --gold: #b68502;
+  --gold-bright: #d4a017;
+  --gold-dim: #8a6400;
+  --gold-glow: rgba(182, 133, 2, 0.3);
+
+  --score-elite: #059669;
+  --score-good: #0891b2;
+  --score-mid: #b68502;
+  --score-low: #ea580c;
+  --score-poor: #dc2626;
+
+  --pitch-bg: #1d6b3f;
+  --pitch-bright: #228149;
+  --pitch-line: rgba(255, 255, 255, 0.75);
+
+  --card-bg-a: rgba(255, 255, 255, 1);
+  --card-bg-b: rgba(234, 241, 251, 1);
+  --glass-bg: rgba(255, 255, 255, 0.82);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: var(--bg);
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: background-color 0.3s ease;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface-1); }
+::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+.score-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+}
+
+/* Stat bars */
+.stat-bar-fill { background: linear-gradient(90deg, var(--accent) 0%, var(--cyan) 100%); }
+.stat-bar-fill-gold { background: linear-gradient(90deg, var(--gold-dim) 0%, var(--gold-bright) 100%); }
+.stat-bar-fill-green { background: linear-gradient(90deg, var(--score-elite) 0%, #34d399 100%); }
+.stat-bar-fill-red { background: linear-gradient(90deg, var(--score-poor) 0%, var(--score-low) 100%); }
+
+/* Score pop */
+@keyframes score-pop {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.score-pop { animation: score-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Range input */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-4);
+  outline: none;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid rgba(255,255,255,0.25);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid rgba(255,255,255,0.25);
+}
+
+/* Drag states */
+.dragging {
+  opacity: 0.4;
+  transform: scale(0.95);
+  transition: all 0.15s ease;
+}
+
+.drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px;
+  background: var(--accent-glow);
+  border-radius: 12px;
+  transition: all 0.1s ease;
+}
+
+.drop-target-active {
+  outline: 2.5px solid var(--gold);
+  outline-offset: 4px;
+  background: var(--gold-glow);
+}
+
+@layer utilities {
+  .gradient-text-gold {
+    background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-text-accent {
+    background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* Select styling */
+select {
+  color: var(--text);
+  background-color: var(--surface-2);
+}
+select option {
+  background-color: var(--surface-2);
+  color: var(--text);
+}
