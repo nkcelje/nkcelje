@@ -96,7 +96,7 @@ export function PitchPlayerCard({
           {/* Name */}
           <div className="w-full text-center">
             <div className="text-[10px] font-semibold leading-tight truncate" style={{ color: '#f5f7fb' }}>
-              {player.lastName}
+              {player.name}
             </div>
             <div
               className="text-[9px] font-bold uppercase tracking-wide leading-tight"

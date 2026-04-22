@@ -54,7 +54,16 @@ const DEFAULT_LINEUP: Record<string, string | null> = {
   rw: 'avdyli',
 };
 
-const DEFAULT_BENCH = ['sluga', 'tutyskinas', 'vuklisevic', 'nieto', 'hrka', 'poplatnik', 'kotnik', 'pozeg-vancas', 'pranjic'];
+const DEFAULT_BENCH = [
+  // GK reserves
+  'sluga', 'kolar',
+  // Defenders
+  'tutyskinas', 'vuklisevic', 'nieto', 'vodeb',
+  // Midfielders
+  'hrka', 'kotnik', 'pranjic', 'pozeg-vancas', 'calusic', 'papa-daniel', 'jevsenak', 'vidovic',
+  // Attackers
+  'poplatnik',
+];
 
 // ─── State Computation ────────────────────────────────────────────────────────
 
