@@ -5,7 +5,6 @@ import { FootballPitch } from '@/components/pitch/FootballPitch';
 import { PlayerDetailPanel } from '@/components/player/PlayerDetailPanel';
 import { RosterPanel } from '@/components/pitch/RosterPanel';
 import { TeamStatsBar } from '@/components/pitch/TeamStatsBar';
-import { TacticalPanel } from '@/components/tactical/TacticalPanel';
 import { useSquad } from '@/context/SquadContext';
 import { useT } from '@/context/I18nContext';
 
@@ -36,12 +35,6 @@ export default function SquadBuilderPage() {
         {/* Team stats compact */}
         <div className="px-4 py-3 border-b border-border-subtle">
           <TeamStatsBar compact />
-        </div>
-
-        {/* Tactics panel */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          <div className="text-[10px] uppercase tracking-widest text-text-muted mb-3">{t('squad.tactics')}</div>
-          <TacticalPanel />
         </div>
       </aside>
 

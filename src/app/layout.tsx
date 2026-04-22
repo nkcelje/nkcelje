@@ -42,14 +42,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <ThemeProvider>
           <I18nProvider>
-          <SquadProvider>
-            <div className="flex flex-col min-h-screen">
-              <Navigation />
-              <main className="flex-1 min-h-0 overflow-hidden">
-                {children}
-              </main>
-            </div>
-          </SquadProvider>
+            <SquadProvider>
+              <div className="flex flex-col min-h-screen">
+                <Navigation />
+                <main className="flex-1 min-h-0 overflow-hidden">
+                  {children}
+                </main>
+              </div>
+            </SquadProvider>
           </I18nProvider>
         </ThemeProvider>
       </body>

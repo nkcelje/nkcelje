@@ -26,6 +26,12 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'theme.light': 'Светлая',
     'lang.label': 'Язык',
 
+    // Settings
+    'settings.open': 'Настройки',
+    'settings.title': 'Настройки',
+    'settings.close': 'Закрыть',
+    'settings.formation': 'Схема',
+
     // Score chips
     'chip.ovr': 'OVR',
     'chip.chm': 'СЫГ',
@@ -244,6 +250,12 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'theme.light': 'Light',
     'lang.label': 'Language',
 
+    // Settings
+    'settings.open': 'Settings',
+    'settings.title': 'Settings',
+    'settings.close': 'Close',
+    'settings.formation': 'Formation',
+
     'chip.ovr': 'OVR',
     'chip.chm': 'CHM',
     'chip.tac': 'TAC',
@@ -446,6 +458,12 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'theme.dark': 'Temna',
     'theme.light': 'Svetla',
     'lang.label': 'Jezik',
+
+    // Settings
+    'settings.open': 'Nastavitve',
+    'settings.title': 'Nastavitve',
+    'settings.close': 'Zapri',
+    'settings.formation': 'Formacija',
 
     'chip.ovr': 'OVR',
     'chip.chm': 'KEM',

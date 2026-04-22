@@ -18,26 +18,6 @@ export function TeamStatsBar({ compact = false }: Props) {
   if (compact) {
     return (
       <div className="flex flex-col gap-3">
-        {/* Formation pills */}
-        <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">{t('stats.formation')}</div>
-          <div className="flex flex-wrap gap-1">
-            {FORMATIONS.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFormation(f.id)}
-                className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all duration-150 ${
-                  formation === f.id
-                    ? 'bg-accent text-white shadow-glow-accent'
-                    : 'bg-surface-3 text-text-secondary hover:bg-surface-4 hover:text-text-primary border border-border-subtle'
-                }`}
-              >
-                {f.displayName}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* OVR big */}
         <div>
           <div className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">{t('stats.rating')}</div>
