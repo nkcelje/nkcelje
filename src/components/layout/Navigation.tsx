@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSquad } from '@/context/SquadContext';
@@ -28,8 +29,14 @@ export function Navigation() {
     >
       {/* Brand */}
       <Link href="/" className="flex items-center gap-2.5 pr-3 shrink-0 group">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="NKCE_AI" className="w-8 h-8 object-contain shrink-0" />
+        <Image
+          src="/logo.png"
+          alt="NKCE_AI"
+          width={32}
+          height={32}
+          priority
+          className="w-8 h-8 object-contain shrink-0"
+        />
         <div className="leading-tight hidden md:block">
           <div className="font-black text-text-primary text-[13px] tracking-wider">NKCE_AI</div>
           <div className="text-[9px] text-text-muted uppercase tracking-widest">{t('brand.club')}</div>

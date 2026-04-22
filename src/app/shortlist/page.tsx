@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useSquad } from '@/context/SquadContext';
 import { SHORTLIST_CANDIDATES } from '@/data/shortlistCandidates';
 import { addRecruit, useRecruits } from '@/data/recruitsStore';
@@ -8,7 +8,7 @@ import { getScoreColor } from '@/lib/scoring';
 import { getPassportBorder } from '@/lib/passport';
 import { PlayerDetailPanel } from '@/components/player/PlayerDetailPanel';
 import { useT } from '@/context/I18nContext';
-import type { Position, League } from '@/types';
+import type { Player, Position, League } from '@/types';
 
 type AmpluaGroup = 'GK' | 'DEF' | 'MID' | 'FWD';
 
@@ -77,12 +77,25 @@ export default function ShortlistPage() {
 
   const hasSelection = !!state.selectedPlayerId;
 
-  const handleAdd = (id: string) => {
-    const candidate = SHORTLIST_CANDIDATES.find((p) => p.id === id);
-    if (!candidate) return;
-    addRecruit(candidate);
-    addToBench(id);
-  };
+  // Stable handlers — keep CandidateCard.memo effective across selection toggles.
+  const handleAdd = useCallback(
+    (id: string) => {
+      const candidate = SHORTLIST_CANDIDATES.find((p) => p.id === id);
+      if (!candidate) return;
+      addRecruit(candidate);
+      addToBench(id);
+    },
+    [addToBench]
+  );
+
+  const handleSelect = useCallback(
+    (id: string | null) => selectPlayer(id),
+    [selectPlayer]
+  );
+
+  const ageSuffix = t('filter.ageSuffix');
+  const addLabel = t('shortlist.add');
+  const alreadyLabel = t('shortlist.alreadyAdded');
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
@@ -185,68 +198,20 @@ export default function ShortlistPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {filtered.map((p) => {
-              const rating = p.baseRating;
               const selected = state.selectedPlayerId === p.id;
               const already = teamedIds.has(p.id);
               return (
-                <div
+                <CandidateCard
                   key={p.id}
-                  className={`rounded-lg p-3 border-2 transition-all duration-150 ${
-                    selected ? 'bg-accent/10' : 'bg-surface-1 hover:bg-surface-2'
-                  }`}
-                  style={{ borderColor: selected ? 'var(--accent)' : getPassportBorder(p) }}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      onClick={() => selectPlayer(selected ? null : p.id)}
-                      className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
-                    >
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shrink-0 text-[11px]"
-                        style={{
-                          background: `radial-gradient(circle at 35% 35%, ${p.avatarColor ?? '#1e40af'}dd, ${p.avatarColor ?? '#1e40af'}88)`,
-                          border: `1px solid ${p.avatarColor ?? '#1e40af'}60`,
-                        }}
-                      >
-                        {p.primaryPosition}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1 text-xs font-semibold text-text-primary truncate">
-                          <span>{p.flag}</span>
-                          <span className="truncate">{p.name}</span>
-                        </div>
-                        <div className="text-[10px] text-text-muted truncate">
-                          {p.club} · {p.league}
-                        </div>
-                        <div className="text-[10px] text-text-dim">
-                          {p.age} {t('filter.ageSuffix')} · {p.nationality} · €{p.marketValue.toFixed(1)}M
-                        </div>
-                      </div>
-                      <div
-                        className="shrink-0 w-9 h-9 rounded-md flex items-center justify-center text-sm font-black score-number"
-                        style={{
-                          color: getScoreColor(rating),
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.05)',
-                        }}
-                      >
-                        {rating}
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => !already && handleAdd(p.id)}
-                      disabled={already}
-                      title={already ? t('shortlist.alreadyAdded') : t('shortlist.add')}
-                      className={`shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-base font-black transition-colors ${
-                        already
-                          ? 'bg-surface-3 text-text-dim cursor-not-allowed border border-border-subtle'
-                          : 'bg-accent/15 text-accent border border-accent/40 hover:bg-accent/25'
-                      }`}
-                    >
-                      {already ? '✓' : '+'}
-                    </button>
-                  </div>
-                </div>
+                  player={p}
+                  selected={selected}
+                  already={already}
+                  ageSuffix={ageSuffix}
+                  addLabel={addLabel}
+                  alreadyLabel={alreadyLabel}
+                  onSelect={handleSelect}
+                  onAdd={handleAdd}
+                />
               );
             })}
           </div>
@@ -320,3 +285,89 @@ function NumInput({
     />
   );
 }
+
+// Memoized candidate card. Keeps the grid from re-rendering all ~N cards on
+// every selection toggle — only the two cards whose `selected` flag flipped.
+type CandidateCardProps = {
+  player: Player;
+  selected: boolean;
+  already: boolean;
+  ageSuffix: string;
+  addLabel: string;
+  alreadyLabel: string;
+  onSelect: (id: string | null) => void;
+  onAdd: (id: string) => void;
+};
+
+const CandidateCard = memo(function CandidateCard({
+  player,
+  selected,
+  already,
+  ageSuffix,
+  addLabel,
+  alreadyLabel,
+  onSelect,
+  onAdd,
+}: CandidateCardProps) {
+  const avatar = player.avatarColor ?? '#1e40af';
+  const rating = player.baseRating;
+  return (
+    <div
+      className={`rounded-lg p-3 border-2 transition-all duration-150 ${
+        selected ? 'bg-accent/10' : 'bg-surface-1 hover:bg-surface-2'
+      }`}
+      style={{ borderColor: selected ? 'var(--accent)' : getPassportBorder(player) }}
+    >
+      <div className="flex items-center gap-2.5">
+        <button
+          onClick={() => onSelect(selected ? null : player.id)}
+          className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
+        >
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shrink-0 text-[11px]"
+            style={{
+              background: `radial-gradient(circle at 35% 35%, ${avatar}dd, ${avatar}88)`,
+              border: `1px solid ${avatar}60`,
+            }}
+          >
+            {player.primaryPosition}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1 text-xs font-semibold text-text-primary truncate">
+              <span>{player.flag}</span>
+              <span className="truncate">{player.name}</span>
+            </div>
+            <div className="text-[10px] text-text-muted truncate">
+              {player.club} · {player.league}
+            </div>
+            <div className="text-[10px] text-text-dim">
+              {player.age} {ageSuffix} · {player.nationality} · €{player.marketValue.toFixed(1)}M
+            </div>
+          </div>
+          <div
+            className="shrink-0 w-9 h-9 rounded-md flex items-center justify-center text-sm font-black score-number"
+            style={{
+              color: getScoreColor(rating),
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}
+          >
+            {rating}
+          </div>
+        </button>
+        <button
+          onClick={() => !already && onAdd(player.id)}
+          disabled={already}
+          title={already ? alreadyLabel : addLabel}
+          className={`shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-base font-black transition-colors ${
+            already
+              ? 'bg-surface-3 text-text-dim cursor-not-allowed border border-border-subtle'
+              : 'bg-accent/15 text-accent border border-accent/40 hover:bg-accent/25'
+          }`}
+        >
+          {already ? '✓' : '+'}
+        </button>
+      </div>
+    </div>
+  );
+});

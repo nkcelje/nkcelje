@@ -11,6 +11,7 @@ import type { Player } from '@/types';
 
 const STORAGE_KEY = 'nkce-recruits';
 
+const EMPTY: Player[] = [];
 let recruits: Player[] = [];
 let hydrated = false;
 const listeners = new Set<() => void>();
@@ -53,7 +54,7 @@ function getSnapshot(): Player[] {
 }
 
 function getServerSnapshot(): Player[] {
-  return [];
+  return EMPTY;
 }
 
 export function addRecruit(player: Player) {

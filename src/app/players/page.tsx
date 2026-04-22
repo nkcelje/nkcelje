@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useSquad } from '@/context/SquadContext';
 import { PLAYERS } from '@/data/players';
 import { useRecruits } from '@/data/recruitsStore';
@@ -8,7 +8,7 @@ import { getScoreColor } from '@/lib/scoring';
 import { getPassportBorder } from '@/lib/passport';
 import { PlayerDetailPanel } from '@/components/player/PlayerDetailPanel';
 import { useT } from '@/context/I18nContext';
-import type { Position } from '@/types';
+import type { Player, Position } from '@/types';
 
 type AmpluaGroup = 'GK' | 'DEF' | 'MID' | 'FWD';
 
@@ -76,6 +76,15 @@ export default function PlayersPage() {
   }, [filtered]);
 
   const hasSelection = !!state.selectedPlayerId;
+
+  // Stable click handler so PlayerCard.memo doesn't invalidate on every render.
+  // Toggle logic lives inside the card and reads its own `selected` prop.
+  const handleSelect = useCallback(
+    (id: string | null) => selectPlayer(id),
+    [selectPlayer]
+  );
+
+  const ageSuffix = t('filter.ageSuffix');
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
@@ -178,46 +187,14 @@ export default function PlayersPage() {
                       const rating = score?.total ?? p.baseRating;
                       const selected = state.selectedPlayerId === p.id;
                       return (
-                        <button
+                        <PlayerCard
                           key={p.id}
-                          onClick={() => selectPlayer(selected ? null : p.id)}
-                          className={`text-left rounded-lg p-3 border-2 transition-all duration-150 ${
-                            selected ? 'bg-accent/10' : 'bg-surface-1 hover:bg-surface-2'
-                          }`}
-                          style={{ borderColor: selected ? 'var(--accent)' : getPassportBorder(p) }}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <div
-                              className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shrink-0 text-[11px]"
-                              style={{
-                                background: `radial-gradient(circle at 35% 35%, ${p.avatarColor ?? '#1e40af'}dd, ${p.avatarColor ?? '#1e40af'}88)`,
-                                border: `1px solid ${p.avatarColor ?? '#1e40af'}60`,
-                              }}
-                            >
-                              {p.jerseyNumber ?? (p.firstName[0] + p.lastName[0])}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1 text-xs font-semibold text-text-primary truncate">
-                                <span>{p.flag}</span>
-                                <span className="truncate">{p.name}</span>
-                                {p.isCaptain && <span className="text-[9px] text-gold ml-0.5">©</span>}
-                              </div>
-                              <div className="text-[10px] text-text-muted">
-                                {p.primaryPosition} · {p.age} {t('filter.ageSuffix')} · {contractYear(p.contractEnds)}
-                              </div>
-                            </div>
-                            <div
-                              className="shrink-0 w-9 h-9 rounded-md flex items-center justify-center text-sm font-black score-number"
-                              style={{
-                                color: getScoreColor(rating),
-                                background: 'rgba(255,255,255,0.04)',
-                                border: '1px solid rgba(255,255,255,0.05)',
-                              }}
-                            >
-                              {rating}
-                            </div>
-                          </div>
-                        </button>
+                          player={p}
+                          rating={rating}
+                          selected={selected}
+                          ageSuffix={ageSuffix}
+                          onSelect={handleSelect}
+                        />
                       );
                     })}
                   </div>
@@ -295,3 +272,65 @@ function NumInput({
     />
   );
 }
+
+// Memoized card. Re-renders only when its own props change (rating, selected,
+// or language-dependent `ageSuffix`). Toggling `selectedPlayerId` in the store
+// thus re-renders only the two affected cards, not the whole grid.
+type PlayerCardProps = {
+  player: Player;
+  rating: number;
+  selected: boolean;
+  ageSuffix: string;
+  onSelect: (id: string | null) => void;
+};
+
+const PlayerCard = memo(function PlayerCard({
+  player,
+  rating,
+  selected,
+  ageSuffix,
+  onSelect,
+}: PlayerCardProps) {
+  const avatar = player.avatarColor ?? '#1e40af';
+  return (
+    <button
+      onClick={() => onSelect(selected ? null : player.id)}
+      className={`text-left rounded-lg p-3 border-2 transition-all duration-150 ${
+        selected ? 'bg-accent/10' : 'bg-surface-1 hover:bg-surface-2'
+      }`}
+      style={{ borderColor: selected ? 'var(--accent)' : getPassportBorder(player) }}
+    >
+      <div className="flex items-center gap-2.5">
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shrink-0 text-[11px]"
+          style={{
+            background: `radial-gradient(circle at 35% 35%, ${avatar}dd, ${avatar}88)`,
+            border: `1px solid ${avatar}60`,
+          }}
+        >
+          {player.jerseyNumber ?? (player.firstName[0] + player.lastName[0])}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1 text-xs font-semibold text-text-primary truncate">
+            <span>{player.flag}</span>
+            <span className="truncate">{player.name}</span>
+            {player.isCaptain && <span className="text-[9px] text-gold ml-0.5">©</span>}
+          </div>
+          <div className="text-[10px] text-text-muted">
+            {player.primaryPosition} · {player.age} {ageSuffix} · {contractYear(player.contractEnds)}
+          </div>
+        </div>
+        <div
+          className="shrink-0 w-9 h-9 rounded-md flex items-center justify-center text-sm font-black score-number"
+          style={{
+            color: getScoreColor(rating),
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.05)',
+          }}
+        >
+          {rating}
+        </div>
+      </div>
+    </button>
+  );
+});

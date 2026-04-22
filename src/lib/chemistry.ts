@@ -5,10 +5,27 @@ export function buildChemistryLinks(
   lineup: Record<string, string | null>,
   players: Record<string, Player>
 ): ChemistryLink[] {
+  return buildChemistryLinksForSlots(
+    formation.slots.map((s) => s.id),
+    formation,
+    lineup,
+    players
+  );
+}
+
+export function buildChemistryLinksForSlots(
+  slotIds: readonly string[],
+  formation: Formation,
+  lineup: Record<string, string | null>,
+  players: Record<string, Player>
+): ChemistryLink[] {
   const links: ChemistryLink[] = [];
   const seen = new Set<string>();
+  const slotsById = new Map(formation.slots.map((s) => [s.id, s]));
 
-  for (const slot of formation.slots) {
+  for (const slotId of slotIds) {
+    const slot = slotsById.get(slotId);
+    if (!slot) continue;
     const playerId = lineup[slot.id];
     if (!playerId) continue;
     const player = players[playerId];
@@ -24,8 +41,9 @@ export function buildChemistryLinks(
       const adjPlayer = players[adjPlayerId];
       if (!adjPlayer) continue;
 
-      const link = evaluateChemistryLink(slot.id, adjSlotId, player, adjPlayer, playerId, adjPlayerId);
-      links.push(link);
+      links.push(
+        evaluateChemistryLink(slot.id, adjSlotId, player, adjPlayer, playerId, adjPlayerId)
+      );
     }
   }
 

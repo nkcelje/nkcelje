@@ -16,9 +16,30 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/*
+          Инлайн-скрипт до гидратации проставляет data-theme / data-lang / lang
+          на <html>, чтобы не моргало темой и языком. Варнинг про hydration
+          mismatch здесь возникает, когда браузерное расширение или Next
+          dev-runtime вставляет свои узлы в <head> раньше нас: React
+          натыкается не на этот <script>, а на чужой пустой. suppressHydrationWarning
+          на <html> на потомков не распространяется, поэтому флаг нужен
+          непосредственно здесь.
+        */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
       </head>
-      <body className="bg-void text-text-primary antialiased">
+      {/*
+        suppressHydrationWarning на <body>: некоторые браузерные расширения
+        (например, Bitdefender TrafficLight — атрибуты `bis_register` и
+        `__processed_<uuid>__`) вешают свои маркеры на <body> до hydration.
+        Это не наш код, на поведение не влияет.
+      */}
+      <body
+        suppressHydrationWarning
+        className="bg-void text-text-primary antialiased"
+      >
         <ThemeProvider>
           <I18nProvider>
           <SquadProvider>

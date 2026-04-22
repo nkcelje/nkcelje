@@ -6,24 +6,19 @@ import React, {
   useReducer,
   useCallback,
   useMemo,
-  useEffect,
 } from 'react';
 import type {
   SquadState,
   FormationName,
   TacticalSettings,
-  ScoreBreakdown,
-  ChemistryLink,
 } from '@/types';
-import { PLAYERS, getPlayerById } from '@/data/players';
-import { FORMATIONS, getFormationById } from '@/data/formations';
+import { getPlayerById } from '@/data/players';
+import { getFormationById } from '@/data/formations';
 import {
-  calculatePlayerScore,
-  calculateTeamScore,
-  calculateChemistryScore,
-  calculateTacticalFitScore,
-} from '@/lib/scoring';
-import { buildChemistryLinks } from '@/lib/chemistry';
+  recomputeFromScratch,
+  recomputeScoresOnly,
+  recomputeIncremental,
+} from '@/lib/squadCompute';
 
 // ─── Default Tactical Settings ────────────────────────────────────────────────
 
@@ -63,69 +58,8 @@ const DEFAULT_BENCH = ['sluga', 'tutyskinas', 'vuklisevic', 'nieto', 'hrka', 'po
 
 // ─── State Computation ────────────────────────────────────────────────────────
 
-function computeScores(
-  lineup: Record<string, string | null>,
-  bench: string[],
-  tactics: TacticalSettings
-): {
-  scores: Record<string, ScoreBreakdown>;
-  chemistryLinks: ChemistryLink[];
-  teamScore: number;
-  chemistryScore: number;
-  tacticalFitScore: number;
-} {
-  const formation = getFormationById(tactics.formation);
-  if (!formation) return { scores: {}, chemistryLinks: [], teamScore: 0, chemistryScore: 50, tacticalFitScore: 50 };
-
-  const playersMap = Object.fromEntries(PLAYERS.map((p) => [p.id, p]));
-
-  // Build chemistry links
-  const chemistryLinks = buildChemistryLinks(formation, lineup, playersMap);
-
-  const scores: Record<string, ScoreBreakdown> = {};
-
-  // Score lineup players
-  for (const slot of formation.slots) {
-    const playerId = lineup[slot.id];
-    if (!playerId) continue;
-    const player = playersMap[playerId];
-    if (!player) continue;
-
-    // Get adjacent players
-    const adjPlayers = slot.adjacentSlots
-      .map((adjId) => {
-        const adjPlayerId = lineup[adjId];
-        return adjPlayerId ? playersMap[adjPlayerId] ?? null : null;
-      })
-      .filter(Boolean);
-
-    const score = calculatePlayerScore(player, slot, adjPlayers, tactics, false);
-    scores[playerId] = score;
-  }
-
-  // Score bench players (use their primary position slot as proxy)
-  for (const benchPlayerId of bench) {
-    const player = playersMap[benchPlayerId];
-    if (!player) continue;
-    // Find the best matching slot for the player
-    const bestSlot =
-      formation.slots.find((s) => s.role === player.primaryPosition) ??
-      formation.slots.find((s) => player.secondaryPositions.includes(s.role)) ??
-      formation.slots[0];
-
-    const score = calculatePlayerScore(player, bestSlot, [], tactics, true);
-    scores[benchPlayerId] = score;
-  }
-
-  const teamScore = calculateTeamScore(scores);
-  const chemistryScore = calculateChemistryScore(scores);
-  const tacticalFitScore = calculateTacticalFitScore(scores);
-
-  return { scores, chemistryLinks, teamScore, chemistryScore, tacticalFitScore };
-}
-
 function buildInitialState(): SquadState {
-  const computed = computeScores(DEFAULT_LINEUP, DEFAULT_BENCH, DEFAULT_TACTICS);
+  const computed = recomputeFromScratch(DEFAULT_LINEUP, DEFAULT_BENCH, DEFAULT_TACTICS);
   return {
     formation: '4-3-3',
     lineup: DEFAULT_LINEUP,
@@ -175,7 +109,7 @@ function reducer(state: SquadState, action: Action): SquadState {
       }
 
       const newTactics = { ...state.tacticalSettings, formation: action.formation };
-      const computed = computeScores(newLineup, state.bench, newTactics);
+      const computed = recomputeFromScratch(newLineup, state.bench, newTactics);
 
       return {
         ...state,
@@ -190,7 +124,8 @@ function reducer(state: SquadState, action: Action): SquadState {
 
     case 'SET_TACTICS': {
       const newTactics = { ...state.tacticalSettings, ...action.tactics };
-      const computed = computeScores(state.lineup, state.bench, newTactics);
+      // Chemistry links don't depend on tactics — reuse them.
+      const computed = recomputeScoresOnly(state, state.lineup, state.bench, newTactics);
       return { ...state, tacticalSettings: newTactics, ...computed };
     }
 
@@ -220,7 +155,14 @@ function reducer(state: SquadState, action: Action): SquadState {
         }
       }
 
-      const computed = computeScores(newLineup, newBench, state.tacticalSettings);
+      const computed = recomputeIncremental(
+        state,
+        state.lineup,
+        state.bench,
+        newLineup,
+        newBench,
+        state.tacticalSettings
+      );
       return {
         ...state,
         lineup: newLineup,
@@ -239,7 +181,14 @@ function reducer(state: SquadState, action: Action): SquadState {
       const newLineup = { ...state.lineup, [slotId]: benchPlayerId };
       const newBench = state.bench.map((id) => (id === benchPlayerId ? lineupPlayerId : id));
 
-      const computed = computeScores(newLineup, newBench, state.tacticalSettings);
+      const computed = recomputeIncremental(
+        state,
+        state.lineup,
+        state.bench,
+        newLineup,
+        newBench,
+        state.tacticalSettings
+      );
       return { ...state, lineup: newLineup, bench: newBench, ...computed };
     }
 
@@ -249,7 +198,14 @@ function reducer(state: SquadState, action: Action): SquadState {
       if (state.bench.includes(playerId)) return state;
       if (Object.values(state.lineup).includes(playerId)) return state;
       const newBench = [...state.bench, playerId];
-      const computed = computeScores(state.lineup, newBench, state.tacticalSettings);
+      const computed = recomputeIncremental(
+        state,
+        state.lineup,
+        state.bench,
+        state.lineup,
+        newBench,
+        state.tacticalSettings
+      );
       return { ...state, bench: newBench, ...computed };
     }
 
@@ -258,7 +214,14 @@ function reducer(state: SquadState, action: Action): SquadState {
       const newLineup = { ...state.lineup, [action.slotId]: null };
       const newBench = removed ? [...state.bench, removed] : state.bench;
 
-      const computed = computeScores(newLineup, newBench, state.tacticalSettings);
+      const computed = recomputeIncremental(
+        state,
+        state.lineup,
+        state.bench,
+        newLineup,
+        newBench,
+        state.tacticalSettings
+      );
       return { ...state, lineup: newLineup, bench: newBench, ...computed };
     }
 
