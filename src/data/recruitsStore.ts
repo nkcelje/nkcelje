@@ -76,3 +76,10 @@ export function removeRecruit(id: string) {
 export function useRecruits(): Player[] {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
+
+// Non-hook access for use inside pure compute functions (e.g. squadCompute.ts)
+// that can't call React hooks. Triggers hydration on first call.
+export function getRecruits(): Player[] {
+  hydrate();
+  return recruits;
+}

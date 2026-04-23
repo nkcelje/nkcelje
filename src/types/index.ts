@@ -152,14 +152,19 @@ export interface ScoreModifiers {
   benchPenalty: number;         // 0 or -3 for bench
 }
 
+export interface ScoreMessage {
+  key: string;
+  vars?: Record<string, string | number>;
+}
+
 export interface ScoreBreakdown {
   playerId: string;
   base: number;
   modifiers: ScoreModifiers;
   total: number;
   positionLabel: string;
-  warnings: string[];
-  positives: string[];
+  warnings: ScoreMessage[];
+  positives: ScoreMessage[];
 }
 
 // ─── Chemistry ───────────────────────────────────────────────────────────────

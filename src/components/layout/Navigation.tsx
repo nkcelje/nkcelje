@@ -19,7 +19,6 @@ export function Navigation() {
 
   const navItems = [
     { href: '/', label: t('nav.squad') },
-    { href: '/players', label: t('nav.players') },
     { href: '/shortlist', label: t('nav.shortlist') },
     { href: '/comparison', label: t('nav.comparison') },
   ];

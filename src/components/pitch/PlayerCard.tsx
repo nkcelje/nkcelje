@@ -4,6 +4,7 @@ import type { Player, ScoreBreakdown } from '@/types';
 import { getScoreColor } from '@/lib/scoring';
 import { getPassportBorder } from '@/lib/passport';
 import { useT } from '@/context/I18nContext';
+import { translateScoreMessage } from '@/i18n/scoreMessage';
 
 interface PlayerCardProps {
   player: Player;
@@ -42,9 +43,11 @@ export function PitchPlayerCard({
   isSelected,
   onClick,
 }: PlayerCardProps) {
+  const t = useT();
   const color = getScoreColor(score.total);
   const passportColor = getPassportBorder(player);
   const hasWarning = score.warnings.length > 0;
+  const firstWarning = score.warnings[0];
 
   return (
     <div
@@ -82,11 +85,11 @@ export function PitchPlayerCard({
         }}
       >
         {/* Warning stripe */}
-        {hasWarning && !isSelected && (
+        {hasWarning && !isSelected && firstWarning && (
           <div
             className="absolute top-0 right-0 w-2 h-2 rounded-bl-md"
             style={{ background: '#f97316' }}
-            title={score.warnings[0]}
+            title={translateScoreMessage(t, firstWarning)}
           />
         )}
 

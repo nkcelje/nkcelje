@@ -139,10 +139,10 @@ function reducer(state: SquadState, action: Action): SquadState {
     }
 
     case 'SELECT_PLAYER':
-      return { ...state, selectedPlayerId: action.playerId, selectedSlotId: null };
+      return { ...state, selectedPlayerId: action.playerId };
 
     case 'SELECT_SLOT':
-      return { ...state, selectedSlotId: action.slotId, selectedPlayerId: null };
+      return { ...state, selectedSlotId: action.slotId };
 
     case 'ASSIGN_PLAYER_TO_SLOT': {
       const { slotId, playerId } = action;
@@ -151,16 +151,20 @@ function reducer(state: SquadState, action: Action): SquadState {
       let newLineup = { ...state.lineup, [slotId]: playerId };
       let newBench = [...state.bench];
 
-      // If the player was on bench, remove from bench
       if (newBench.includes(playerId)) {
+        // Coming from bench → remove from bench, push displaced to bench.
         newBench = newBench.filter((id) => id !== playerId);
-        // Move displaced player to bench
         if (prevPlayerId) newBench.push(prevPlayerId);
       } else {
-        // Was in another slot — swap
         const prevSlot = Object.entries(state.lineup).find(([, pid]) => pid === playerId)?.[0];
         if (prevSlot) {
+          // Was in another lineup slot — swap.
           newLineup = { ...newLineup, [prevSlot]: prevPlayerId ?? null };
+        } else {
+          // Incoming player is neither in the lineup nor on the bench — this
+          // is a new signing dragged from the Shortlist tab. Push the
+          // displaced starter onto the bench so they aren't lost.
+          if (prevPlayerId) newBench.push(prevPlayerId);
         }
       }
 

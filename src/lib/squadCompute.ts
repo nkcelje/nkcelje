@@ -7,6 +7,7 @@ import type {
   TacticalSettings,
 } from '@/types';
 import { PLAYERS } from '@/data/players';
+import { getRecruits } from '@/data/recruitsStore';
 import { getFormationById } from '@/data/formations';
 import {
   calculatePlayerScore,
@@ -36,6 +37,19 @@ const EMPTY: ComputedState = {
   tacticalFitScore: 50,
 };
 
+/**
+ * Build the Player lookup pool for one compute call. The base roster is static
+ * (PLAYERS_MAP), but recruits added from the Shortlist can also end up in the
+ * lineup or on the bench — so we layer them on top each time. Called once per
+ * entry point; inner helpers receive this map as `pool` instead of touching
+ * the module-level PLAYERS_MAP directly.
+ */
+function buildPool(): Record<string, Player> {
+  const pool: Record<string, Player> = { ...PLAYERS_MAP };
+  for (const r of getRecruits()) pool[r.id] = r;
+  return pool;
+}
+
 function aggregates(scores: Record<string, ScoreBreakdown>): Pick<
   ComputedState,
   'teamScore' | 'chemistryScore' | 'tacticalFitScore'
@@ -50,17 +64,18 @@ function aggregates(scores: Record<string, ScoreBreakdown>): Pick<
 function scoreLineupSlot(
   slot: FormationSlot,
   lineup: Record<string, string | null>,
-  tactics: TacticalSettings
+  tactics: TacticalSettings,
+  pool: Record<string, Player>
 ): ScoreBreakdown | null {
   const playerId = lineup[slot.id];
   if (!playerId) return null;
-  const player = PLAYERS_MAP[playerId];
+  const player = pool[playerId];
   if (!player) return null;
 
   const adjPlayers = slot.adjacentSlots
     .map((adjId) => {
       const adjPlayerId = lineup[adjId];
-      return adjPlayerId ? PLAYERS_MAP[adjPlayerId] ?? null : null;
+      return adjPlayerId ? pool[adjPlayerId] ?? null : null;
     })
     .filter(Boolean) as Player[];
 
@@ -70,9 +85,10 @@ function scoreLineupSlot(
 function scoreBenchPlayer(
   playerId: string,
   formation: Formation,
-  tactics: TacticalSettings
+  tactics: TacticalSettings,
+  pool: Record<string, Player>
 ): ScoreBreakdown | null {
-  const player = PLAYERS_MAP[playerId];
+  const player = pool[playerId];
   if (!player) return null;
   const bestSlot =
     formation.slots.find((s) => s.role === player.primaryPosition) ??
@@ -91,16 +107,17 @@ export function recomputeFromScratch(
   const formation = getFormationById(tactics.formation);
   if (!formation) return EMPTY;
 
-  const chemistryLinks = buildChemistryLinks(formation, lineup, PLAYERS_MAP);
+  const pool = buildPool();
+  const chemistryLinks = buildChemistryLinks(formation, lineup, pool);
   const scores: Record<string, ScoreBreakdown> = {};
 
   for (const slot of formation.slots) {
-    const s = scoreLineupSlot(slot, lineup, tactics);
+    const s = scoreLineupSlot(slot, lineup, tactics, pool);
     if (s) scores[s.playerId] = s;
   }
 
   for (const benchId of bench) {
-    const s = scoreBenchPlayer(benchId, formation, tactics);
+    const s = scoreBenchPlayer(benchId, formation, tactics, pool);
     if (s) scores[s.playerId] = s;
   }
 
@@ -118,15 +135,16 @@ export function recomputeScoresOnly(
   const formation = getFormationById(tactics.formation);
   if (!formation) return EMPTY;
 
+  const pool = buildPool();
   const scores: Record<string, ScoreBreakdown> = {};
 
   for (const slot of formation.slots) {
-    const s = scoreLineupSlot(slot, lineup, tactics);
+    const s = scoreLineupSlot(slot, lineup, tactics, pool);
     if (s) scores[s.playerId] = s;
   }
 
   for (const benchId of bench) {
-    const s = scoreBenchPlayer(benchId, formation, tactics);
+    const s = scoreBenchPlayer(benchId, formation, tactics, pool);
     if (s) scores[s.playerId] = s;
   }
 
@@ -150,6 +168,8 @@ export function recomputeIncremental(
   const formation = getFormationById(tactics.formation);
   if (!formation) return EMPTY;
 
+  const pool = buildPool();
+
   // Dirty slots: slots whose occupancy changed.
   const dirtySlots = new Set<string>();
   for (const slot of formation.slots) {
@@ -168,9 +188,6 @@ export function recomputeIncremental(
   // Start from previous scores and drop everything that might change.
   const scores: Record<string, ScoreBreakdown> = { ...prev.scores };
 
-  // Drop stale lineup entries:
-  //   - the player that used to occupy any dirty slot (may no longer be in lineup)
-  //   - whatever score sits at any affected slot (we will recompute)
   affectedSlots.forEach((slotId) => {
     const prevPid = prevLineup[slotId];
     if (prevPid) delete scores[prevPid];
@@ -178,25 +195,22 @@ export function recomputeIncremental(
     if (nowPid) delete scores[nowPid];
   });
 
-  // Drop bench scores for players that left the bench.
   const benchSet = new Set(bench);
   for (const bid of prevBench) {
     if (!benchSet.has(bid)) delete scores[bid];
   }
 
-  // Recompute affected lineup slots.
   affectedSlots.forEach((slotId) => {
     const slot = slotsById.get(slotId);
     if (!slot) return;
-    const s = scoreLineupSlot(slot, lineup, tactics);
+    const s = scoreLineupSlot(slot, lineup, tactics, pool);
     if (s) scores[s.playerId] = s;
   });
 
-  // Recompute bench scores only for players newly added to bench.
   const prevBenchSet = new Set(prevBench);
   for (const bid of bench) {
     if (!prevBenchSet.has(bid)) {
-      const s = scoreBenchPlayer(bid, formation, tactics);
+      const s = scoreBenchPlayer(bid, formation, tactics, pool);
       if (s) scores[s.playerId] = s;
     }
   }
@@ -211,7 +225,7 @@ export function recomputeIncremental(
     Array.from(dirtySlots),
     formation,
     lineup,
-    PLAYERS_MAP
+    pool
   );
   const chemistryLinks = retainedLinks.concat(rebuiltLinks);
 

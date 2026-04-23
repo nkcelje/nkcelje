@@ -1,6 +1,7 @@
 import type {
   Player,
   Position,
+  Role,
   FormationSlot,
   TacticalSettings,
   ScoreBreakdown,
@@ -116,10 +117,10 @@ export function getRoleFitModifier(
   player: Player,
   slotRole: Position,
   tactics: TacticalSettings
-): { value: number; label: string; detail: string } {
+): { value: number; label: string; detail: string; role: Role | null } {
   // Find which of player's preferred roles best matches the current slot
   let bestMatch = 0;
-  let bestRole = '';
+  let bestRole: Role | null = null;
 
   for (const role of player.preferredRoles) {
     const positions = ROLE_POSITION_MAP[role] ?? [];
@@ -142,11 +143,12 @@ export function getRoleFitModifier(
 
   const totalValue = Math.min(5, bestMatch + tacticalBonus - (bestMatch === 0 ? 3 : 0));
 
-  if (bestMatch === 5) {
+  if (bestMatch === 5 && bestRole) {
     return {
       value: totalValue,
       label: `Ideal role: ${bestRole}`,
       detail: `Best suited as ${bestRole} — fully aligned with squad role`,
+      role: bestRole,
     };
   }
 
@@ -154,6 +156,7 @@ export function getRoleFitModifier(
     value: totalValue,
     label: 'Role mismatch',
     detail: `No preferred role matches ${slotRole} slot — limited role familiarity`,
+    role: null,
   };
 }
 
@@ -363,20 +366,22 @@ export function calculatePlayerScore(
 
   const total = Math.min(99, Math.max(42, Math.round(rawTotal)));
 
-  const warnings: string[] = [];
-  const positives: string[] = [];
+  const warnings: ScoreBreakdown['warnings'] = [];
+  const positives: ScoreBreakdown['positives'] = [];
 
-  if (modifiers.positionFamiliarity <= -10) warnings.push('⚠ Playing out of position');
-  else if (modifiers.positionFamiliarity === -3) warnings.push('Playing secondary position');
-  if (modifiers.roleFit < 0) warnings.push('Role mismatch with tactical plan');
-  if (modifiers.tacticalFit <= -3) warnings.push('Poor tactical system fit');
-  if (modifiers.chemistry <= -2) warnings.push('Low chemistry with neighbours');
+  if (modifiers.positionFamiliarity <= -10) warnings.push({ key: 'breakdown.warn.outOfPosition' });
+  else if (modifiers.positionFamiliarity === -3) warnings.push({ key: 'breakdown.warn.secondaryPosition' });
+  if (modifiers.roleFit < 0) warnings.push({ key: 'breakdown.warn.roleMismatch' });
+  if (modifiers.tacticalFit <= -3) warnings.push({ key: 'breakdown.warn.poorTacticalFit' });
+  if (modifiers.chemistry <= -2) warnings.push({ key: 'breakdown.warn.lowChemistry' });
 
-  if (modifiers.roleFit >= 4) positives.push(`✓ ${roleMod.label}`);
-  if (modifiers.chemistry >= 3) positives.push('✓ Strong team chemistry');
-  if (modifiers.tacticalFit >= 3) positives.push('✓ Excellent tactical alignment');
-  if (modifiers.opponentContext >= 2) positives.push('✓ Good matchup vs opponent');
-  if (modifiers.positionFamiliarity === 0) positives.push('✓ Natural position');
+  if (modifiers.roleFit >= 4 && roleMod.role) {
+    positives.push({ key: 'breakdown.pos.idealRole', vars: { roleKey: `role.${roleMod.role}` } });
+  }
+  if (modifiers.chemistry >= 3) positives.push({ key: 'breakdown.pos.strongChemistry' });
+  if (modifiers.tacticalFit >= 3) positives.push({ key: 'breakdown.pos.tacticalAlignment' });
+  if (modifiers.opponentContext >= 2) positives.push({ key: 'breakdown.pos.goodMatchup' });
+  if (modifiers.positionFamiliarity === 0) positives.push({ key: 'breakdown.pos.naturalPosition' });
 
   return {
     playerId: player.id,
@@ -422,6 +427,15 @@ export function getScoreColor(score: number): string {
   return '#ef4444'; // red
 }
 
+export function getScoreLabelKey(score: number): string {
+  if (score >= 87) return 'score.label.elite';
+  if (score >= 82) return 'score.label.excellent';
+  if (score >= 74) return 'score.label.good';
+  if (score >= 65) return 'score.label.average';
+  return 'score.label.poor';
+}
+
+/** @deprecated English-only. Use `getScoreLabelKey` with the `t()` helper. */
 export function getScoreLabel(score: number): string {
   if (score >= 87) return 'Elite';
   if (score >= 82) return 'Excellent';

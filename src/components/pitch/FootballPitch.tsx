@@ -2,6 +2,7 @@
 
 import { useSquad } from '@/context/SquadContext';
 import { getPlayerById } from '@/data/players';
+import { useRecruits } from '@/data/recruitsStore';
 import { FORMATIONS } from '@/data/formations';
 import { PitchPlayerCard } from './PlayerCard';
 import { ChemistryLinks } from './ChemistryLinks';
@@ -12,6 +13,7 @@ const PITCH_H = 640;
 
 export function FootballPitch() {
   const { state, selectPlayer, selectSlot, assignPlayerToSlot } = useSquad();
+  const recruits = useRecruits();
   const formation = FORMATIONS.find((f) => f.id === state.formation);
 
   if (!formation) return null;
@@ -19,10 +21,18 @@ export function FootballPitch() {
   const handleSlotClick = (slotId: string) => {
     const playerId = state.lineup[slotId];
     if (playerId) {
-      selectPlayer(playerId === state.selectedPlayerId ? null : playerId);
-      selectSlot(null);
+      // Click on a player card on the pitch: select both the player (for the
+      // detail panel on the right) and the slot (so the sidebar knows the
+      // selection came from the pitch and can filter by slot role). Clicking
+      // the same player again toggles both off.
+      const toggleOff = playerId === state.selectedPlayerId;
+      selectPlayer(toggleOff ? null : playerId);
+      selectSlot(toggleOff ? null : slotId);
     } else {
-      selectSlot(slotId === state.selectedSlotId ? null : slotId);
+      // Empty slot: toggle slot context, and clear any open player selection.
+      const toggleOff = slotId === state.selectedSlotId;
+      selectSlot(toggleOff ? null : slotId);
+      selectPlayer(null);
     }
   };
 
@@ -53,7 +63,9 @@ export function FootballPitch() {
       <div className="absolute inset-0" style={{ zIndex: 3 }}>
         {formation.slots.map((slot) => {
           const playerId = state.lineup[slot.id];
-          const player = playerId ? getPlayerById(playerId) : null;
+          const player = playerId
+            ? (getPlayerById(playerId) ?? recruits.find((p) => p.id === playerId) ?? null)
+            : null;
           const score = playerId ? state.scores[playerId] : null;
 
           const x = (slot.x / 100) * PITCH_W;

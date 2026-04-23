@@ -1,7 +1,7 @@
 'use client';
 
 import type { Player, ScoreBreakdown } from '@/types';
-import { getScoreColor, getScoreLabel } from '@/lib/scoring';
+import { getScoreColor, getScoreLabelKey } from '@/lib/scoring';
 import { AttributeRadar } from './AttributeRadar';
 import { ScoreBreakdownPanel } from './ScoreBreakdown';
 import { StatBar } from '@/components/ui/StatBar';
@@ -11,6 +11,7 @@ import { getPlayerById } from '@/data/players';
 import { useRecruits } from '@/data/recruitsStore';
 import { SHORTLIST_CANDIDATES } from '@/data/shortlistCandidates';
 import { useT } from '@/context/I18nContext';
+import { translateScoreMessage } from '@/i18n/scoreMessage';
 
 function synthBreakdown(player: Player): ScoreBreakdown {
   return {
@@ -33,7 +34,7 @@ function synthBreakdown(player: Player): ScoreBreakdown {
 }
 
 export function PlayerDetailPanel() {
-  const { state, selectPlayer } = useSquad();
+  const { state, selectPlayer, removeFromLineup } = useSquad();
   const recruits = useRecruits();
   const t = useT();
   const { selectedPlayerId } = state;
@@ -46,6 +47,11 @@ export function PlayerDetailPanel() {
     : null;
   const breakdown = selectedPlayerId
     ? (state.scores[selectedPlayerId] ?? (player ? synthBreakdown(player) : null))
+    : null;
+
+  // Find the slot the selected player currently occupies (if any).
+  const lineupSlotId = selectedPlayerId
+    ? Object.entries(state.lineup).find(([, pid]) => pid === selectedPlayerId)?.[0] ?? null
     : null;
 
   if (!player || !breakdown) {
@@ -63,7 +69,12 @@ export function PlayerDetailPanel() {
   }
 
   return (
-    <PlayerProfile player={player} breakdown={breakdown} onClose={() => selectPlayer(null)} />
+    <PlayerProfile
+      player={player}
+      breakdown={breakdown}
+      onClose={() => selectPlayer(null)}
+      onRemoveFromLineup={lineupSlotId ? () => removeFromLineup(lineupSlotId) : undefined}
+    />
   );
 }
 
@@ -71,14 +82,16 @@ function PlayerProfile({
   player,
   breakdown,
   onClose,
+  onRemoveFromLineup,
 }: {
   player: Player;
   breakdown: ScoreBreakdown;
   onClose: () => void;
+  onRemoveFromLineup?: () => void;
 }) {
   const t = useT();
   const color = getScoreColor(breakdown.total);
-  const label = getScoreLabel(breakdown.total);
+  const label = t(getScoreLabelKey(breakdown.total));
   const initials = `${player.firstName[0]}${player.lastName[0]}`;
 
   const allAttrs = [
@@ -183,6 +196,20 @@ function PlayerProfile({
             ))}
           </div>
         )}
+
+        {/* Lineup actions */}
+        {onRemoveFromLineup && (
+          <button
+            type="button"
+            onClick={onRemoveFromLineup}
+            className="mt-3 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-semibold border border-score-low/30 bg-score-low/10 text-score-low hover:bg-score-low/20 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3 h-3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            {t('player.removeFromLineup')}
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -190,14 +217,14 @@ function PlayerProfile({
         {(breakdown.warnings.length > 0 || breakdown.positives.length > 0) && (
           <div className="px-4 py-3 border-b border-border-subtle space-y-1.5">
             {breakdown.warnings.map((w) => (
-              <div key={w} className="flex items-start gap-2 text-[11px] text-score-low">
+              <div key={w.key} className="flex items-start gap-2 text-[11px] text-score-low">
                 <span className="shrink-0 mt-0.5">⚠</span>
-                <span>{w}</span>
+                <span>{translateScoreMessage(t, w)}</span>
               </div>
             ))}
             {breakdown.positives.map((p) => (
-              <div key={p} className="flex items-start gap-2 text-[11px] text-score-elite">
-                <span>{p}</span>
+              <div key={p.key} className="flex items-start gap-2 text-[11px] text-score-elite">
+                <span>{translateScoreMessage(t, p)}</span>
               </div>
             ))}
           </div>
@@ -247,7 +274,7 @@ function PlayerProfile({
           <div className="text-[10px] text-text-muted uppercase tracking-widest mb-3">{t('player.bestRoles')}</div>
           <div className="flex flex-wrap gap-1.5">
             {player.preferredRoles.map((role) => (
-              <Badge key={role} label={role} variant="blue" size="xs" />
+              <Badge key={role} label={t(`role.${role}`)} variant="blue" size="xs" />
             ))}
           </div>
         </div>
@@ -257,7 +284,7 @@ function PlayerProfile({
           <div className="text-[10px] text-text-muted uppercase tracking-widest mb-3">{t('player.style')}</div>
           <div className="flex flex-wrap gap-1.5">
             {player.styleTags.map((tag) => (
-              <Badge key={tag} label={tag} variant="gray" size="xs" />
+              <Badge key={tag} label={t(`styleTag.${tag}`)} variant="gray" size="xs" />
             ))}
           </div>
         </div>

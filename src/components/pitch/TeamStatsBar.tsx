@@ -1,7 +1,7 @@
 'use client';
 
 import { useSquad } from '@/context/SquadContext';
-import { getScoreColor, getScoreLabel } from '@/lib/scoring';
+import { getScoreColor, getScoreLabelKey } from '@/lib/scoring';
 import { FORMATIONS } from '@/data/formations';
 import { useT } from '@/context/I18nContext';
 
@@ -28,7 +28,7 @@ export function TeamStatsBar({ compact = false }: Props) {
             >
               {teamScore}
             </span>
-            <span className="text-[11px] text-text-secondary">{getScoreLabel(teamScore)}</span>
+            <span className="text-[11px] text-text-secondary">{t(getScoreLabelKey(teamScore))}</span>
           </div>
         </div>
 
@@ -69,7 +69,7 @@ export function TeamStatsBar({ compact = false }: Props) {
         </div>
       </div>
       <div className="w-px bg-border-subtle" />
-      <ScoreStat label={t('stats.ratingShort')} value={teamScore} description={getScoreLabel(teamScore)} />
+      <ScoreStat label={t('stats.ratingShort')} value={teamScore} description={t(getScoreLabelKey(teamScore))} />
       <div className="w-px bg-border-subtle" />
       <PercentStat label={t('stats.chemistry')} value={chemistryScore} color="#10b981" />
       <div className="w-px bg-border-subtle" />
