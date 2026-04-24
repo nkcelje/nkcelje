@@ -52,6 +52,14 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'stats.tacticalFit': 'Такт. соответствие',
     'stats.style': 'Стиль',
 
+    // UCL progression
+    'ucl.title': 'Шансы в ЛЧ 2026/27',
+    'ucl.stage.r1': '1-й раунд',
+    'ucl.stage.r2': '2-й раунд',
+    'ucl.stage.r3': '3-й раунд',
+    'ucl.stage.playoff': 'Плей-офф ЛЧ',
+    'ucl.stage.group': 'Группа ЛЧ',
+
     // Style values
     'style.balanced': 'Сбалансированный',
     'style.tiki-taka': 'Тики-така',
@@ -353,6 +361,13 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'stats.tacticalFit': 'Tactical Fit',
     'stats.style': 'Style',
 
+    'ucl.title': 'UCL 2026/27 chances',
+    'ucl.stage.r1': 'Round 1',
+    'ucl.stage.r2': 'Round 2',
+    'ucl.stage.r3': 'Round 3',
+    'ucl.stage.playoff': 'UCL play-off',
+    'ucl.stage.group': 'UCL group',
+
     'style.balanced': 'Balanced',
     'style.tiki-taka': 'Tiki-taka',
     'style.gegenpressing': 'Gegenpress',
@@ -637,6 +652,13 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'stats.chemistry': 'Kemija',
     'stats.tacticalFit': 'Tak. ustreznost',
     'stats.style': 'Slog',
+
+    'ucl.title': 'Možnosti v LP 2026/27',
+    'ucl.stage.r1': '1. krog',
+    'ucl.stage.r2': '2. krog',
+    'ucl.stage.r3': '3. krog',
+    'ucl.stage.playoff': 'LP dodatne kval.',
+    'ucl.stage.group': 'Skupinski del LP',
 
     'style.balanced': 'Uravnotežen',
     'style.tiki-taka': 'Tiki-taka',

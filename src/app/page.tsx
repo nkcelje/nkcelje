@@ -4,6 +4,7 @@ import { FootballPitch } from '@/components/pitch/FootballPitch';
 import { PlayerDetailPanel } from '@/components/player/PlayerDetailPanel';
 import { SquadSidebar } from '@/components/pitch/SquadSidebar';
 import { TeamStatsBar } from '@/components/pitch/TeamStatsBar';
+import { UclProgressionChart } from '@/components/pitch/UclProgressionChart';
 import { useSquad } from '@/context/SquadContext';
 
 export default function SquadBuilderPage() {
@@ -12,16 +13,15 @@ export default function SquadBuilderPage() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
-      {/* ── Left: Team stats + Squad tabs + filters ── */}
+      {/* ── Left: Team stats + UCL projection ── */}
       <aside
-        className="w-[320px] border-r border-border-subtle flex flex-col shrink-0 overflow-hidden"
+        className="w-[240px] border-r border-border-subtle flex flex-col shrink-0 overflow-hidden"
         style={{ background: 'var(--surface-1)' }}
       >
-        <div className="px-4 py-3 border-b border-border-subtle shrink-0">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
           <TeamStatsBar compact />
-        </div>
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <SquadSidebar />
+          <div className="h-px bg-border-subtle" />
+          <UclProgressionChart />
         </div>
       </aside>
 
@@ -32,7 +32,9 @@ export default function SquadBuilderPage() {
         </div>
       </div>
 
-      {/* ── Right: sliding player detail panel ── */}
+      {/* ── Right-centre: sliding player detail panel (appears between pitch
+           and squad; its content slides in from the right of its own column,
+           visually pushing the squad tabs further from the pitch) ── */}
       <aside
         className={`shrink-0 overflow-hidden border-l border-border-subtle transition-[width] duration-300 ease-out ${
           hasSelectedPlayer ? 'w-[340px]' : 'w-0'
@@ -47,6 +49,14 @@ export default function SquadBuilderPage() {
         >
           <PlayerDetailPanel />
         </div>
+      </aside>
+
+      {/* ── Right: Squad sidebar (Клуб / Шортлист + filters) ── */}
+      <aside
+        className="w-[320px] border-l border-border-subtle flex flex-col shrink-0 overflow-hidden"
+        style={{ background: 'var(--surface-1)' }}
+      >
+        <SquadSidebar />
       </aside>
     </div>
   );
