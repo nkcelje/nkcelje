@@ -1,336 +1,555 @@
 'use client';
 
-import { useState } from 'react';
-import type { Player } from '@/types';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PLAYERS } from '@/data/players';
-import { getScoreColor } from '@/lib/scoring';
-import { AttributeRadar } from '@/components/player/AttributeRadar';
-import { Badge } from '@/components/ui/Badge';
-import { useSquad } from '@/context/SquadContext';
 import { useT } from '@/context/I18nContext';
+import { getPassportTag } from '@/lib/passport';
+import type { Player, PlayerAttributes } from '@/types';
 
-const ATTR_KEYS = [
-  'pace',
-  'passing',
-  'defending',
-  'finishing',
-  'tacticalIntelligence',
-  'physicality',
-  'pressResistance',
-  'ballProgression',
-  'duels',
-  'creativity',
-] as const;
+const ATTRS: { key: keyof PlayerAttributes; labelKey: string }[] = [
+  { key: 'pace', labelKey: 'attr.pace' },
+  { key: 'finishing', labelKey: 'attr.finishing' },
+  { key: 'passing', labelKey: 'attr.passing' },
+  { key: 'creativity', labelKey: 'attr.creativity' },
+  { key: 'defending', labelKey: 'attr.defending' },
+  { key: 'physicality', labelKey: 'attr.physicality' },
+];
+
+const COLORS = ['var(--celje-yellow)', 'var(--info)', '#FF8C8C', 'var(--good)'];
+
+const DEFAULT_IDS = ['bejger', 'seslar', 'kucys'];
 
 export function ComparisonView() {
-  const { state } = useSquad();
   const t = useT();
-  const [slot1, setSlot1] = useState<string>(PLAYERS[0]?.id ?? '');
-  const [slot2, setSlot2] = useState<string>(PLAYERS[1]?.id ?? '');
-  const [slot3, setSlot3] = useState<string | null>(null);
+  const [compareIds, setCompareIds] = useState<string[]>(() =>
+    DEFAULT_IDS.filter((id) => PLAYERS.some((p) => p.id === id))
+  );
+  const [pickerForIndex, setPickerForIndex] = useState<number | null>(null);
 
-  const player1 = PLAYERS.find((p) => p.id === slot1);
-  const player2 = PLAYERS.find((p) => p.id === slot2);
-  const player3 = slot3 ? PLAYERS.find((p) => p.id === slot3) : null;
+  const players = useMemo(
+    () => compareIds.map((id) => PLAYERS.find((p) => p.id === id)).filter((p): p is Player => !!p),
+    [compareIds]
+  );
 
-  const score1 = state.scores[slot1];
-  const score2 = state.scores[slot2];
-  const score3 = slot3 ? state.scores[slot3] : undefined;
+  // Squad average per attribute (deltas)
+  const squadAvg = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const { key } of ATTRS) {
+      const sum = PLAYERS.reduce((s, p) => s + p.attributes[key], 0);
+      out[key] = Math.round(sum / PLAYERS.length);
+    }
+    return out;
+  }, []);
 
-  const activePlayers = [player1, player2, player3].filter(Boolean) as Player[];
+  const replaceAt = (idx: number, id: string) => {
+    setCompareIds((prev) => {
+      const next = [...prev];
+      next[idx] = id;
+      return next;
+    });
+  };
+  const removeAt = (idx: number) => {
+    setCompareIds((prev) => prev.filter((_, i) => i !== idx));
+  };
+  const addPlayer = () => {
+    const candidate = PLAYERS.find((p) => !compareIds.includes(p.id));
+    if (candidate) setCompareIds((prev) => [...prev, candidate.id]);
+  };
+
+  const headerCols = `280px ${players.map(() => '1fr').join(' ')}`;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary">{t('cmp.title')}</h1>
-        <p className="text-sm text-text-secondary mt-1">{t('cmp.subtitle')}</p>
-      </div>
-
-      {/* Player selectors */}
-      <div className="grid grid-cols-3 gap-4">
-        <PlayerSelector label={t('cmp.playerA')} selectedId={slot1} onSelect={setSlot1} />
-        <PlayerSelector label={t('cmp.playerB')} selectedId={slot2} onSelect={setSlot2} />
-        <PlayerSelector
-          label={t('cmp.playerC')}
-          selectedId={slot3 ?? ''}
-          onSelect={(id) => setSlot3(id || null)}
-          optional
-        />
-      </div>
-
-      {/* Radar overlay comparison */}
-      {player1 && player2 && (
-        <div
-          className="rounded-panel p-5 border border-border-subtle"
-          style={{ background: 'var(--surface-1)' }}
-        >
-          <div className="text-[10px] text-text-muted uppercase tracking-widest mb-4">
-            {t('cmp.radarOverlay')}
-          </div>
-          <div className="flex items-center justify-center gap-12 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-accent rounded" />
-              <span className="text-xs text-text-secondary">{player1.name}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 rounded" style={{ background: '#f59e0b' }} />
-              <span className="text-xs text-text-secondary">{player2.name}</span>
-            </div>
-          </div>
-          <div className="flex justify-center mt-4">
-            <AttributeRadar
-              attributes={player1.attributes}
-              compareAttributes={player2.attributes}
-              size={260}
-              showLabels
-            />
+    <div className="view-compare">
+      <div className="page-head">
+        <div>
+          <div className="page-title">{t('cmp.title').toUpperCase()}</div>
+          <div className="page-sub mono">
+            {players.length} PLAYERS · ATTRIBUTES + DELTA + RADAR
           </div>
         </div>
-      )}
+        <div className="page-actions">
+          <button type="button" className="btn ghost" style={{ flex: 0 }}>Save view</button>
+          <button type="button" className="btn primary" style={{ flex: 0 }}>Export PDF</button>
+        </div>
+      </div>
 
-      {/* Side-by-side cards */}
-      <div className={`grid gap-4 ${activePlayers.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        {activePlayers.map((player, idx) => {
-          const scores = [score1, score2, score3][idx];
-          const dynamicScore = scores?.total;
-          const color = dynamicScore ? getScoreColor(dynamicScore) : '#94a3b8';
-          const initials = `${player.firstName[0]}${player.lastName[0]}`;
-
-          return (
-            <div
-              key={player.id}
-              className="rounded-panel overflow-hidden border border-border-subtle"
-              style={{ background: 'var(--surface-1)' }}
-            >
-              {/* Top accent */}
+      {/* Radar */}
+      {players.length >= 2 && (
+        <div className="radar-card">
+          <div className="radar-wrap">
+            <RadarChart players={players} />
+            <div>
               <div
-                className="h-0.5"
-                style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
-              />
-
-              {/* Player header */}
-              <div className="p-4 flex items-center gap-3 border-b border-border-subtle">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold"
-                  style={{
-                    background: `radial-gradient(circle at 35% 35%, ${player.avatarColor ?? '#1e40af'}dd, ${player.avatarColor ?? '#1e40af'}88)`,
-                    border: `1px solid ${player.avatarColor ?? '#1e40af'}60`,
-                  }}
-                >
-                  {initials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-text-primary text-sm truncate">{player.name}</div>
-                  <div className="text-[11px] text-text-muted">
-                    {player.flag} {player.nationality} · {player.age} {t('filter.ageSuffix')}
-                  </div>
-                  <div className="text-[11px] text-text-muted truncate">{player.club}</div>
-                </div>
-                {dynamicScore !== undefined && (
-                  <div
-                    className="w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0"
-                    style={{ background: `${color}18`, border: `1.5px solid ${color}40`, color }}
-                  >
-                    <span className="text-xl font-bold score-number leading-none">{dynamicScore}</span>
-                    <span className="text-[8px] text-text-muted">{t('chip.ovr')}</span>
-                  </div>
-                )}
+                style={{
+                  fontSize: 10,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.14em',
+                  color: 'var(--ink-3)',
+                  marginBottom: 10,
+                }}
+              >
+                {t('cmp.radarOverlay')}
               </div>
-
-              {/* Quick stats */}
-              <div className="grid grid-cols-3 divide-x divide-border-subtle border-b border-border-subtle">
-                {[
-                  { label: t('cmp.position'), value: player.primaryPosition },
-                  { label: t('cmp.value'), value: `€${player.marketValue}M` },
-                  { label: t('cmp.potential'), value: player.potential },
-                ].map(({ label, value }) => (
-                  <div key={label} className="py-2 text-center">
-                    <div className="text-[9px] text-text-muted uppercase tracking-wide">{label}</div>
-                    <div className="text-xs font-bold text-text-primary mt-0.5">{value}</div>
+              <div className="radar-legend">
+                {players.map((p, i) => (
+                  <div key={p.id} className="legend-row">
+                    <span className="swatch" style={{ background: COLORS[i] }} />
+                    <span>
+                      {p.firstName} {p.lastName}{' '}
+                      <span className="muted">· {p.primaryPosition}</span>
+                    </span>
+                    <span className="mono" style={{ color: 'var(--ink-1)' }}>
+                      {p.baseRating}
+                    </span>
                   </div>
                 ))}
               </div>
-
-              {/* Attributes */}
-              <div className="p-4 space-y-1.5">
-                {ATTR_KEYS.map((key) => {
-                  const val = player.attributes[key];
-                  const maxVal = Math.max(...activePlayers.map((p) => p.attributes[key]));
-                  const isBest = val === maxVal && activePlayers.length > 1;
-                  return (
-                    <div key={key} className="flex items-center gap-2">
-                      <span
-                        className={`text-[10px] shrink-0 w-28 ${
-                          isBest ? 'text-text-primary font-semibold' : 'text-text-secondary'
-                        }`}
-                      >
-                        {isBest ? '▸ ' : ''}
-                        {t(`attr.${key}`)}
-                      </span>
-                      <div className="flex-1 h-1 rounded-full bg-surface-4 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-300"
-                          style={{
-                            width: `${val}%`,
-                            background: isBest
-                              ? `linear-gradient(90deg, ${color}, ${color}bb)`
-                              : 'rgba(59,130,246,0.5)',
-                          }}
-                        />
-                      </div>
-                      <span
-                        className={`text-[11px] font-bold score-number w-6 text-right shrink-0 ${
-                          isBest ? '' : 'text-text-muted'
-                        }`}
-                        style={isBest ? { color } : {}}
-                      >
-                        {val}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Score breakdown summary */}
-              {scores && (
-                <div className="px-4 pb-4 space-y-1">
-                  <div className="text-[10px] text-text-muted uppercase tracking-widest mb-2">
-                    {t('cmp.scoreModifiers')}
-                  </div>
-                  {Object.entries(scores.modifiers).map(([key, val]) => {
-                    if (val === 0 && key !== 'positionFamiliarity') return null;
-                    return (
-                      <div key={key} className="flex items-center justify-between text-[10px]">
-                        <span className="text-text-muted">{t(`mod.${key}`)}</span>
-                        <span
-                          className={
-                            val > 0
-                              ? 'text-score-elite'
-                              : val < 0
-                              ? 'text-score-low'
-                              : 'text-text-muted'
-                          }
-                        >
-                          {val > 0 ? '+' : ''}
-                          {val}
-                        </span>
-                      </div>
-                    );
-                  })}
+              <div
+                style={{
+                  marginTop: 18,
+                  paddingTop: 14,
+                  borderTop: '1px dashed var(--line)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.14em',
+                    color: 'var(--ink-3)',
+                    marginBottom: 8,
+                  }}
+                >
+                  {t('cmp.verdict')}
                 </div>
-              )}
-
-              {/* Roles */}
-              <div className="px-4 pb-4">
-                <div className="text-[10px] text-text-muted uppercase tracking-widest mb-2">
-                  {t('cmp.bestRoles')}
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {player.preferredRoles.slice(0, 3).map((role) => (
-                    <Badge key={role} label={role} variant="blue" size="xs" />
-                  ))}
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--ink-1)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <Verdict players={players} />
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comparison grid */}
+      <div className="compare-grid" style={{ gridTemplateColumns: headerCols }}>
+        <div className="compare-row head">
+          <div
+            className="compare-label"
+            style={{ alignSelf: 'end', color: 'var(--ink-2)' }}
+          >
+            —
+          </div>
+          {players.map((p) => (
+            <div key={p.id} className={`compare-head-card pp-card-${getPassportTag(p)}`}>
+              <div className={`pcard-disc pp-${getPassportTag(p)}`}>
+                {p.firstName[0]}
+                {p.lastName[0]}
+              </div>
+              <div>
+                <div className="name">
+                  <span style={{ marginRight: 6 }}>{p.flag}</span>
+                  {p.firstName} {p.lastName}
+                </div>
+                <div className="role">
+                  {p.primaryPosition} · {p.preferredRoles[0] ?? '—'}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="compare-row">
+          <div className="compare-label">{t('chip.ovr')}</div>
+          {players.map((p) => (
+            <div
+              key={p.id}
+              className="compare-cell"
+              style={{
+                fontSize: 22,
+                fontFamily: 'var(--font-display)',
+                color: 'var(--celje-yellow)',
+              }}
+            >
+              {p.baseRating}{' '}
+              <span
+                style={{
+                  fontSize: 11,
+                  color: 'var(--ink-3)',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                → {p.potential}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {ATTRS.map(({ key, labelKey }) => {
+          const vals = players.map((p) => p.attributes[key]);
+          const max = Math.max(...vals);
+          const min = Math.min(...vals);
+          return (
+            <div key={key} className="compare-row">
+              <div className="compare-label">{t(labelKey)}</div>
+              {players.map((p, i) => {
+                const v = vals[i];
+                const cls = v === max ? 'max' : v === min && max !== min ? 'min' : '';
+                const delta = v - squadAvg[key];
+                return (
+                  <div key={p.id} className="compare-cell bar-cell">
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: 11,
+                      }}
+                    >
+                      <span
+                        className={`mono ${cls}`}
+                        style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}
+                      >
+                        {v}
+                      </span>
+                      <span
+                        className="mono"
+                        style={{
+                          fontSize: 10,
+                          color: delta >= 0 ? 'var(--good)' : 'var(--bad)',
+                        }}
+                      >
+                        {delta >= 0 ? '+' : ''}
+                        {delta}
+                      </span>
+                    </div>
+                    <div className="bar">
+                      <i style={{ width: `${v}%`, background: COLORS[i] }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           );
         })}
+
+        {/* Base rows */}
+        <BaseRow label={t('player.age')} players={players} fn={(p) => `${p.age}`} />
+        <BaseRow label={t('player.foot')} players={players} fn={(p) => p.preferredFoot} />
+        <BaseRow label={t('player.height')} players={players} fn={(p) => `${p.height} cm`} />
+        <BaseRow label={t('player.contract')} players={players} fn={(p) => p.contractEnds} />
+        <BaseRow label={t('player.value')} players={players} fn={(p) => `€${p.marketValue.toFixed(1)}M`} />
+
+        <div className="compare-row">
+          <div className="compare-label">Action</div>
+          {players.map((p, i) => (
+            <div key={p.id} className="compare-cell" style={{ gap: 6 }}>
+              <button
+                type="button"
+                className="btn ghost"
+                style={{ flex: 0, padding: '6px 10px' }}
+                onClick={() => setPickerForIndex(i)}
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                style={{ flex: 0, padding: '6px 10px' }}
+                onClick={() => removeAt(i)}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Summary verdict */}
-      {player1 && player2 && score1 && score2 && (
-        <ComparisonVerdict
-          player1={player1}
-          player2={player2}
-          score1={score1.total}
-          score2={score2.total}
+      {players.length < 4 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: headerCols,
+            marginTop: 12,
+          }}
+        >
+          <div />
+          {players.map((_, i) =>
+            i === players.length - 1 ? (
+              <div key={i} className="compare-add" onClick={addPlayer}>
+                + Add player
+              </div>
+            ) : (
+              <div key={i} />
+            )
+          )}
+        </div>
+      )}
+
+      {pickerForIndex !== null && (
+        <PlayerPicker
+          excludeIds={compareIds}
+          onPick={(p) => {
+            replaceAt(pickerForIndex, p.id);
+            setPickerForIndex(null);
+          }}
+          onClose={() => setPickerForIndex(null)}
+          title="Replace player"
         />
       )}
     </div>
   );
 }
 
-function PlayerSelector({
+function BaseRow({
   label,
-  selectedId,
-  onSelect,
-  optional = false,
+  players,
+  fn,
 }: {
   label: string;
-  selectedId: string;
-  onSelect: (id: string) => void;
-  optional?: boolean;
+  players: Player[];
+  fn: (p: Player) => string;
 }) {
-  const t = useT();
   return (
-    <div>
-      <label className="text-[10px] text-text-muted uppercase tracking-widest block mb-1.5">
-        {label}
-      </label>
-      <select
-        value={selectedId}
-        onChange={(e) => onSelect(e.target.value)}
-        className="w-full bg-surface-2 border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all duration-150"
-      >
-        {optional && <option value="">{t('cmp.none')}</option>}
-        {PLAYERS.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name} ({p.primaryPosition}) — {t('chip.ovr')} {p.baseRating}
-          </option>
-        ))}
-      </select>
+    <div className="compare-row">
+      <div className="compare-label">{label}</div>
+      {players.map((p) => (
+        <div key={p.id} className="compare-cell">
+          {fn(p)}
+        </div>
+      ))}
     </div>
   );
 }
 
-function ComparisonVerdict({
-  player1,
-  player2,
-  score1,
-  score2,
-}: {
-  player1: Player;
-  player2: Player;
-  score1: number;
-  score2: number;
-}) {
-  const t = useT();
-  const winner = score1 > score2 ? player1 : player2;
-  const diff = Math.abs(score1 - score2);
-  const verdict =
-    diff <= 2
-      ? t('cmp.verdict.equal')
-      : diff <= 5
-      ? t('cmp.verdict.slight', { name: winner.name })
-      : t('cmp.verdict.clear', { name: winner.name });
+function bestAttr(p: Player, all: Player[]): keyof PlayerAttributes {
+  let best: keyof PlayerAttributes = 'pace';
+  let bestDiff = -Infinity;
+  for (const { key } of ATTRS) {
+    const others = all.filter((x) => x.id !== p.id).map((x) => x.attributes[key]);
+    if (others.length === 0) continue;
+    const avg = others.reduce((a, b) => a + b, 0) / others.length;
+    const diff = p.attributes[key] - avg;
+    if (diff > bestDiff) {
+      bestDiff = diff;
+      best = key;
+    }
+  }
+  return best;
+}
 
-  const winColor = getScoreColor(Math.max(score1, score2));
+function Verdict({ players }: { players: Player[] }) {
+  const t = useT();
+  if (players.length < 2) return null;
+  const a = players[0];
+  const b = players[1];
+  const bestA = bestAttr(a, players);
+  const bestB = bestAttr(b, players);
+  return (
+    <span>
+      <b style={{ color: 'var(--celje-yellow)' }}>{a.lastName}</b> leads on{' '}
+      {t(`attr.${bestA}`).toLowerCase()},{' '}
+      <b style={{ color: 'var(--info)' }}>{b.lastName}</b> on{' '}
+      {t(`attr.${bestB}`).toLowerCase()}.
+      {players[2] && (
+        <>
+          {' '}
+          Pair <b>{a.lastName}</b> + <b>{players[2].lastName}</b> for tactical balance.
+        </>
+      )}
+    </span>
+  );
+}
+
+// ─── Radar chart (SVG) ──────────────────────────────────────
+function RadarChart({ players }: { players: Player[] }) {
+  const size = 320;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 130;
+  const n = ATTRS.length;
+  const t = useT();
+
+  const points = (vals: number[]) =>
+    vals.map((v, i) => {
+      const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+      const rad = (v / 100) * r;
+      return [cx + Math.cos(angle) * rad, cy + Math.sin(angle) * rad] as [number, number];
+    });
+
+  const labelPoints = ATTRS.map((_, i) => {
+    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+    const rad = r + 18;
+    return [cx + Math.cos(angle) * rad, cy + Math.sin(angle) * rad] as [number, number];
+  });
 
   return (
-    <div
-      className="rounded-panel p-5 border border-border-subtle"
-      style={{ background: `linear-gradient(135deg, ${winColor}14 0%, var(--surface-1) 100%)` }}
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      style={{ display: 'block', margin: '0 auto' }}
     >
-      <div className="text-[10px] text-text-muted uppercase tracking-widest mb-2">
-        {t('cmp.verdict')}
-      </div>
-      <div className="text-sm text-text-primary font-medium">{verdict}</div>
-      <div className="flex items-center gap-4 mt-3 flex-wrap">
-        <div className="text-center">
-          <div className="text-2xl font-bold score-number" style={{ color: getScoreColor(score1) }}>
-            {score1}
-          </div>
-          <div className="text-[10px] text-text-muted">{player1.name}</div>
+      {[0.25, 0.5, 0.75, 1].map((s) => (
+        <polygon
+          key={s}
+          points={ATTRS.map((_, i) => {
+            const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+            return `${cx + Math.cos(angle) * r * s},${cy + Math.sin(angle) * r * s}`;
+          }).join(' ')}
+          fill="none"
+          stroke="var(--line)"
+          strokeDasharray={s === 1 ? '' : '2 3'}
+        />
+      ))}
+      {ATTRS.map((_, i) => {
+        const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+        return (
+          <line
+            key={i}
+            x1={cx}
+            y1={cy}
+            x2={cx + Math.cos(angle) * r}
+            y2={cy + Math.sin(angle) * r}
+            stroke="var(--line)"
+          />
+        );
+      })}
+      {players.map((p, idx) => {
+        const pts = points(ATTRS.map(({ key }) => p.attributes[key]));
+        return (
+          <polygon
+            key={p.id}
+            points={pts.map((pt) => pt.join(',')).join(' ')}
+            fill={COLORS[idx]}
+            fillOpacity="0.12"
+            stroke={COLORS[idx]}
+            strokeWidth="1.5"
+          />
+        );
+      })}
+      {players.map((p, idx) => {
+        const pts = points(ATTRS.map(({ key }) => p.attributes[key]));
+        return pts.map((pt, i) => (
+          <circle
+            key={`${p.id}-${i}`}
+            cx={pt[0]}
+            cy={pt[1]}
+            r="3"
+            fill={COLORS[idx]}
+          />
+        ));
+      })}
+      {ATTRS.map(({ labelKey }, i) => {
+        const [x, y] = labelPoints[i];
+        return (
+          <text
+            key={i}
+            x={x}
+            y={y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontFamily="var(--font-mono)"
+            fontSize="10"
+            fill="var(--ink-2)"
+            letterSpacing="0.1em"
+          >
+            {t(labelKey).toUpperCase().slice(0, 3)}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ─── Player picker modal ────────────────────────────────────
+function PlayerPicker({
+  excludeIds,
+  onPick,
+  onClose,
+  title,
+}: {
+  excludeIds: string[];
+  onPick: (p: Player) => void;
+  onClose: () => void;
+  title: string;
+}) {
+  const t = useT();
+  const [q, setQ] = useState('');
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+
+  const filtered = PLAYERS.filter((p) => {
+    if (excludeIds.includes(p.id)) return false;
+    if (!q) return true;
+    return `${p.firstName} ${p.lastName}`.toLowerCase().includes(q.toLowerCase());
+  });
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <div style={{ fontSize: 13, fontWeight: 500 }}>{title}</div>
+          <button type="button" className="icon-btn" onClick={onClose}>
+            ×
+          </button>
         </div>
-        <div className="text-text-muted text-sm">vs</div>
-        <div className="text-center">
-          <div className="text-2xl font-bold score-number" style={{ color: getScoreColor(score2) }}>
-            {score2}
-          </div>
-          <div className="text-[10px] text-text-muted">{player2.name}</div>
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--line)' }}>
+          <input
+            ref={ref}
+            className="input"
+            placeholder={t('filter.searchPlaceholder')}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
         </div>
-        <div className="ml-auto text-[11px] text-text-muted">
-          {t('cmp.diff')}: <span className="text-text-primary font-bold">{diff} {t('cmp.pts')}</span>
+        <div className="modal-body">
+          {filtered.map((p) => (
+            <div key={p.id} className="modal-row" onClick={() => onPick(p)}>
+              <span
+                className="mono"
+                style={{ color: 'var(--ink-3)', textAlign: 'right' }}
+              >
+                {p.jerseyNumber ?? '—'}
+              </span>
+              <span>{p.flag}</span>
+              <span>
+                {p.firstName} {p.lastName}
+              </span>
+              <span className="pos">{p.primaryPosition}</span>
+              <span
+                className="mono"
+                style={{
+                  color: 'var(--celje-yellow)',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 16,
+                  width: 32,
+                  textAlign: 'right',
+                }}
+              >
+                {p.baseRating}
+              </span>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div
+              style={{
+                padding: 24,
+                textAlign: 'center',
+                color: 'var(--ink-3)',
+                fontSize: 12,
+              }}
+            >
+              No players
+            </div>
+          )}
         </div>
       </div>
     </div>

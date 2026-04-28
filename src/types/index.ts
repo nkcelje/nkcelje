@@ -65,6 +65,18 @@ export interface PlayerAttributes {
 
 // ─── Player ──────────────────────────────────────────────────────────────────
 
+export interface PlayerInjury {
+  /** Recovery date in MM.YYYY format. */
+  recoveryDate: string;
+  reason?: string;
+}
+
+export interface PlayerLoanReturn {
+  /** Return date in MM.YYYY format. */
+  date: string;
+  fromClub?: string;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -83,7 +95,13 @@ export interface Player {
   baseRating: number;
   potential: number;
   marketValue: number;  // millions €
-  contractEnds: string;
+  contractEnds: string;            // year, e.g. "2027"
+  contractEndMonth?: number;       // 1..12, defaults to 6 (June)
+  salaryAnnual?: number;           // €/year, capped at 400 000
+  injury?: PlayerInjury;
+  loanReturn?: PlayerLoanReturn;
+  wantExtend?: boolean;
+  wantTerminate?: boolean;
   styleTags: StyleTag[];
   height: number;  // cm
   weight: number;  // kg

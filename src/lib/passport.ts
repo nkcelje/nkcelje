@@ -2,6 +2,7 @@
 // Slovenia uses EU freedom-of-movement; non-EU foreigners count against a limited quota.
 
 export type PassportStatus = 'slovenian' | 'eu' | 'foreign';
+export type PassportTag = 'SI' | 'EU' | 'FOREIGN';
 
 const EU_NATIONALITIES = new Set<string>([
   'Austrian', 'Belgian', 'Bulgarian', 'Croatian', 'Cypriot', 'Czech', 'Danish',
@@ -21,10 +22,17 @@ export function getPassportStatus(player: { id: string; nationality: string }): 
   return 'foreign';
 }
 
+export function getPassportTag(player: { id: string; nationality: string }): PassportTag {
+  const status = getPassportStatus(player);
+  if (status === 'slovenian') return 'SI';
+  if (status === 'eu') return 'EU';
+  return 'FOREIGN';
+}
+
 export const PASSPORT_BORDER: Record<PassportStatus, string> = {
-  slovenian: '#3b82f6', // blue
-  eu: '#10b981',        // green
-  foreign: '#ef4444',   // red
+  slovenian: '#4FA3FF', // blue (Algorythm)
+  eu: '#5BD392',        // green (--good)
+  foreign: '#FF6B6B',   // red (--bad)
 };
 
 export function getPassportBorder(player: { id: string; nationality: string }): string {

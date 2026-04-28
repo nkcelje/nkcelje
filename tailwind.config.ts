@@ -10,6 +10,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Algorythm primary palette
+        'celje': 'var(--celje-yellow)',
+        'celje-bright': 'var(--celje-yellow-soft)',
+        'celje-dim': 'var(--celje-yellow-2)',
+        'ink-0': 'var(--ink-0)',
+        'ink-1': 'var(--ink-1)',
+        'ink-2': 'var(--ink-2)',
+        'ink-3': 'var(--ink-3)',
+        'ink-4': 'var(--ink-4)',
+        'bg-0': 'var(--bg-0)',
+        'bg-1': 'var(--bg-1)',
+        'bg-2': 'var(--bg-2)',
+        'bg-3': 'var(--bg-3)',
+        'bg-4': 'var(--bg-4)',
+        'line': 'var(--line)',
+        'line-2': 'var(--line-2)',
+        'good': 'var(--good)',
+        'warn': 'var(--warn)',
+        'bad': 'var(--bad)',
+        'info': 'var(--info)',
+
+        // Legacy semantic aliases — preserved so existing markup keeps working
         'void': 'var(--bg)',
         'surface-0': 'var(--bg)',
         'surface-1': 'var(--surface-1)',
@@ -49,6 +71,7 @@ const config: Config = {
       fontFamily: {
         display: ['var(--font-display)', 'sans-serif'],
         body: ['var(--font-body)', 'sans-serif'],
+        sans: ['var(--font-sans)', 'sans-serif'],
         mono: ['var(--font-mono)', 'monospace'],
       },
       boxShadow: {
@@ -56,7 +79,7 @@ const config: Config = {
         'card-hover': '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
         'glow-accent': '0 0 20px var(--accent-glow)',
         'glow-gold': '0 0 20px var(--gold-glow)',
-        'glow-green': '0 0 20px rgba(16,185,129,0.4)',
+        'glow-green': '0 0 20px rgba(91, 211, 146, 0.4)',
         'player-card': '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)',
       },
       animation: {
@@ -66,11 +89,24 @@ const config: Config = {
         'fade-in': 'fadeIn 0.2s ease-out',
       },
       keyframes: {
-        slideInRight: { '0%': { transform: 'translateX(20px)', opacity: '0' }, '100%': { transform: 'translateX(0)', opacity: '1' } },
-        slideUp: { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
-        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        slideInRight: {
+          '0%': { transform: 'translateX(20px)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
       },
-      borderRadius: { 'card': '12px', 'panel': '16px', 'modal': '20px' },
+      borderRadius: {
+        'card': '12px',
+        'panel': '16px',
+        'modal': '20px',
+      },
     },
   },
   plugins: [],

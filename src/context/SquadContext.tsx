@@ -39,19 +39,22 @@ const DEFAULT_TACTICS: TacticalSettings = {
 
 // ─── Default Lineup ───────────────────────────────────────────────────────────
 
-// 4-3-3 starting XI (single pivot)
+// 4-3-3 starting XI — taken literally from the recruitment screenshot the
+// user shared: each starter is the player at the top of their column.
+// Karničnik shifts to LB (top of LB column), Nieto becomes the RB starter,
+// Tutyškinas leads CB-left, Pranjić takes the LW slot, Iosifov the right.
 const DEFAULT_LINEUP: Record<string, string | null> = {
   gk: 'leban',
-  lb: 'vukasovic',
-  'cb-l': 'castro',
+  lb: 'karnicnik',
+  'cb-l': 'tutyskinas',
   'cb-r': 'bejger',
-  rb: 'karnicnik',
-  cdm: 'kvesic',
-  'cm-l': 'zabukovnik',
+  rb: 'nieto',
+  cdm: 'zabukovnik',
+  'cm-l': 'kvesic',
   'cm-r': 'seslar',
-  lw: 'iosifov',
+  lw: 'pranjic',
   st: 'kucys',
-  rw: 'avdyli',
+  rw: 'iosifov',
 };
 
 const DEFAULT_BENCH = [

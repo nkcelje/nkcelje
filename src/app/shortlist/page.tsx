@@ -4,47 +4,59 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { useSquad } from '@/context/SquadContext';
 import { SHORTLIST_CANDIDATES } from '@/data/shortlistCandidates';
 import { addRecruit, useRecruits } from '@/data/recruitsStore';
-import { getScoreColor } from '@/lib/scoring';
-import { getPassportBorder } from '@/lib/passport';
-import { PlayerDetailPanel } from '@/components/player/PlayerDetailPanel';
 import { useT } from '@/context/I18nContext';
+import { getPassportTag } from '@/lib/passport';
 import type { Player, Position, League } from '@/types';
 
-type AmpluaGroup = 'GK' | 'DEF' | 'MID' | 'FWD';
+type Priority = 'hot' | 'warm' | 'cold';
 
-const AMPLUA_KEYS: Record<AmpluaGroup, string> = {
-  GK: 'filter.gk',
-  DEF: 'filter.def',
-  MID: 'filter.mid',
-  FWD: 'filter.fwd',
-};
+const POSITION_OPTIONS: Position[] = [
+  'GK', 'CB', 'LB', 'RB', 'LWB', 'RWB',
+  'CDM', 'CM', 'CAM', 'LM', 'RM',
+  'LW', 'RW', 'CF', 'ST',
+];
 
-const GK: Position[] = ['GK'];
-const DEF: Position[] = ['CB', 'LB', 'RB', 'LWB', 'RWB'];
-const MID: Position[] = ['CDM', 'CM', 'CAM', 'LM', 'RM'];
-const FWD: Position[] = ['LW', 'RW', 'CF', 'ST'];
-
-function ampluaOf(pos: Position): AmpluaGroup {
-  if (GK.includes(pos)) return 'GK';
-  if (DEF.includes(pos)) return 'DEF';
-  if (MID.includes(pos)) return 'MID';
-  return 'FWD';
+function priorityOf(p: Player): Priority {
+  // Hot = high potential, low age. Cold = older with limited upside. Else warm.
+  const upside = p.potential - p.baseRating;
+  if (upside >= 8 && p.age <= 23) return 'hot';
+  if (upside <= 3 && p.age >= 26) return 'cold';
+  return 'warm';
+}
+function scoutScoreOf(p: Player): number {
+  return Math.round(p.baseRating + (p.potential - p.baseRating) * 0.5);
+}
+function fitScoreOf(p: Player): number {
+  return Math.max(40, Math.min(99, Math.round(p.baseRating - 2 + (p.attributes.tacticalIntelligence - 70) * 0.2)));
+}
+function notesFor(p: Player): string {
+  const upside = p.potential - p.baseRating;
+  if (upside >= 10) return `High-ceiling project: +${upside} POT runway, ${p.attributes.pace} pace.`;
+  if (upside >= 6) return `Solid developmental signing — depth + growth.`;
+  if (p.age >= 28) return `Experienced floor — proven at ${p.league} level.`;
+  return `Profile fits squad: balanced numbers, ${p.styleTags[0] ?? '—'} traits.`;
+}
+function reportsFor(p: Player): number {
+  // deterministic 2..6 from id
+  return 2 + (p.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 5);
+}
+function lastSeenFor(p: Player): string {
+  const days = 1 + (p.id.length * 3) % 28;
+  return days < 7 ? `${days}d` : `${Math.floor(days / 7)}w`;
 }
 
 export default function ShortlistPage() {
-  const { state, selectPlayer, addToBench } = useSquad();
+  const { state, addToBench } = useSquad();
   const recruits = useRecruits();
   const t = useT();
 
   // Filters
   const [query, setQuery] = useState('');
-  const [amplua, setAmplua] = useState<'ALL' | AmpluaGroup>('ALL');
-  const [minAge, setMinAge] = useState<number>(16);
-  const [maxAge, setMaxAge] = useState<number>(40);
-  const [league, setLeague] = useState<'ALL' | League>('ALL');
-  const [country, setCountry] = useState('');
+  const [pos, setPos] = useState<'' | Position>('');
+  const [league, setLeague] = useState<'' | League>('');
+  const [maxAge, setMaxAge] = useState<number>(30);
+  const [priority, setPriority] = useState<'' | Priority>('');
 
-  // Teamed/recruited set — hide + button if already added
   const teamedIds = useMemo(() => {
     const ids = new Set<string>();
     Object.values(state.lineup).forEach((id) => id && ids.add(id));
@@ -61,23 +73,19 @@ export default function ShortlistPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const c = country.trim().toLowerCase();
     return SHORTLIST_CANDIDATES.filter((p) => {
-      if (amplua !== 'ALL' && ampluaOf(p.primaryPosition) !== amplua) return false;
-      if (p.age < minAge || p.age > maxAge) return false;
-      if (league !== 'ALL' && p.league !== league) return false;
-      if (c && !p.nationality.toLowerCase().includes(c)) return false;
+      if (pos && p.primaryPosition !== pos) return false;
+      if (league && p.league !== league) return false;
+      if (p.age > maxAge) return false;
+      if (priority && priorityOf(p) !== priority) return false;
       if (q) {
         const hay = `${p.name} ${p.firstName} ${p.lastName} ${p.club} ${p.league} ${p.nationality}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [query, amplua, minAge, maxAge, league, country]);
+  }, [query, pos, league, maxAge, priority]);
 
-  const hasSelection = !!state.selectedPlayerId;
-
-  // Stable handlers — keep CandidateCard.memo effective across selection toggles.
   const handleAdd = useCallback(
     (id: string) => {
       const candidate = SHORTLIST_CANDIDATES.find((p) => p.id === id);
@@ -88,284 +96,188 @@ export default function ShortlistPage() {
     [addToBench]
   );
 
-  const handleSelect = useCallback(
-    (id: string | null) => selectPlayer(id),
-    [selectPlayer]
-  );
-
-  const ageSuffix = t('filter.ageSuffix');
-  const addLabel = t('shortlist.add');
-  const alreadyLabel = t('shortlist.alreadyAdded');
+  const reset = () => {
+    setQuery('');
+    setPos('');
+    setLeague('');
+    setMaxAge(30);
+    setPriority('');
+  };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
-      {/* Left: filters */}
-      <aside
-        className="w-[280px] border-r border-border-subtle shrink-0 overflow-y-auto"
-        style={{ background: 'var(--surface-1)' }}
-      >
-        <div className="px-4 py-4">
-          <div className="text-[10px] uppercase tracking-widest text-text-muted mb-1">{t('filter.title')}</div>
-          <div className="text-xs text-text-secondary mb-5">{t('shortlist.candidates')} — {SHORTLIST_CANDIDATES.length}</div>
-
-          <FilterSection label={t('filter.search')}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('filter.searchPlaceholder')}
-              className="w-full bg-surface-2 border border-border-subtle rounded-md px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-dim focus:outline-none focus:border-accent"
-            />
-          </FilterSection>
-
-          <FilterSection label={t('filter.position')}>
-            <div className="flex flex-col gap-1">
-              <RadioChip label={t('filter.all')} active={amplua === 'ALL'} onClick={() => setAmplua('ALL')} />
-              {(['GK', 'DEF', 'MID', 'FWD'] as AmpluaGroup[]).map((a) => (
-                <RadioChip
-                  key={a}
-                  label={t(AMPLUA_KEYS[a])}
-                  active={amplua === a}
-                  onClick={() => setAmplua(a)}
-                />
-              ))}
-            </div>
-          </FilterSection>
-
-          <FilterSection label={t('filter.age')}>
-            <div className="flex items-center gap-2">
-              <NumInput value={minAge} onChange={setMinAge} min={15} max={45} />
-              <span className="text-text-muted text-xs">—</span>
-              <NumInput value={maxAge} onChange={setMaxAge} min={15} max={45} />
-              <span className="text-[10px] text-text-muted">{t('filter.ageSuffix')}</span>
-            </div>
-          </FilterSection>
-
-          <FilterSection label={t('filter.league')}>
-            <select
-              value={league}
-              onChange={(e) => setLeague(e.target.value as 'ALL' | League)}
-              className="w-full bg-surface-2 border border-border-subtle rounded-md px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent"
-            >
-              <option value="ALL">{t('filter.allLeagues')}</option>
-              {leagues.map((lg) => (
-                <option key={lg} value={lg}>
-                  {lg}
-                </option>
-              ))}
-            </select>
-          </FilterSection>
-
-          <FilterSection label={t('filter.country')}>
-            <input
-              type="text"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              placeholder={t('filter.countryPlaceholder')}
-              className="w-full bg-surface-2 border border-border-subtle rounded-md px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-dim focus:outline-none focus:border-accent"
-            />
-          </FilterSection>
-
-          <button
-            onClick={() => {
-              setQuery('');
-              setAmplua('ALL');
-              setMinAge(16);
-              setMaxAge(40);
-              setLeague('ALL');
-              setCountry('');
-            }}
-            className="w-full mt-2 py-2 text-[11px] rounded-md bg-surface-3 text-text-muted hover:bg-surface-4 hover:text-text-secondary border border-border-subtle"
-          >
-            {t('filter.reset')}
-          </button>
+    <div className="view-shortlist">
+      <div className="page-head">
+        <div>
+          <div className="page-title">{t('shortlist.title').toUpperCase()}</div>
+          <div className="page-sub mono">
+            {filtered.length} / {SHORTLIST_CANDIDATES.length} · WINDOW: SUMMER 2026
+          </div>
         </div>
-      </aside>
-
-      {/* Middle: candidate grid */}
-      <main className="flex-1 min-w-0 overflow-y-auto p-5">
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-text-primary">{t('shortlist.title')}</h1>
-          <p className="text-xs text-text-secondary mt-0.5">
-            {t('players.found')}: {filtered.length} {t('players.of')} {SHORTLIST_CANDIDATES.length}. {t('shortlist.subtitle')}
-          </p>
+        <div className="page-actions">
+          <button type="button" className="btn ghost" style={{ flex: 0 }}>Board</button>
+          <button type="button" className="btn primary" style={{ flex: 0 }}>+ Add target</button>
         </div>
+      </div>
 
-        {filtered.length === 0 ? (
-          <div className="text-sm text-text-muted italic py-10 text-center">
-            {t('shortlist.empty')}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {filtered.map((p) => {
-              const selected = state.selectedPlayerId === p.id;
-              const already = teamedIds.has(p.id);
-              return (
-                <CandidateCard
-                  key={p.id}
-                  player={p}
-                  selected={selected}
-                  already={already}
-                  ageSuffix={ageSuffix}
-                  addLabel={addLabel}
-                  alreadyLabel={alreadyLabel}
-                  onSelect={handleSelect}
-                  onAdd={handleAdd}
-                />
-              );
-            })}
-          </div>
-        )}
-      </main>
+      <div className="filters-bar">
+        <input
+          className="input"
+          placeholder={t('filter.searchPlaceholder')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <select
+          className="select"
+          value={pos}
+          onChange={(e) => setPos((e.target.value as Position) || '')}
+        >
+          <option value="">{t('filter.position')} · {t('filter.any')}</option>
+          {POSITION_OPTIONS.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+        <select
+          className="select"
+          value={league}
+          onChange={(e) => setLeague((e.target.value as League) || '')}
+        >
+          <option value="">{t('filter.league')} · {t('filter.any')}</option>
+          {leagues.map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <select
+          className="select"
+          value={maxAge}
+          onChange={(e) => setMaxAge(parseInt(e.target.value, 10))}
+        >
+          {[21, 23, 25, 28, 30, 35].map((a) => (
+            <option key={a} value={a}>
+              ≤ {a} {t('filter.ageSuffix')}
+            </option>
+          ))}
+        </select>
+        <select
+          className="select"
+          value={priority}
+          onChange={(e) => setPriority((e.target.value as Priority) || '')}
+        >
+          <option value="">Priority · {t('filter.any')}</option>
+          <option value="hot">Hot</option>
+          <option value="warm">Warm</option>
+          <option value="cold">Cold</option>
+        </select>
+        <button type="button" className="btn ghost" onClick={reset} style={{ flex: 0 }}>
+          {t('filter.reset')}
+        </button>
+      </div>
 
-      {/* Right: detail panel */}
-      <aside
-        className="w-[340px] border-l border-border-subtle shrink-0 overflow-hidden flex flex-col"
-        style={{ background: 'var(--surface-1)' }}
-      >
-        {hasSelection ? (
-          <PlayerDetailPanel />
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-14 h-14 rounded-full bg-surface-3 flex items-center justify-center mb-3 text-2xl">
-              🔍
-            </div>
-            <div className="text-sm text-text-muted">{t('shortlist.select')}</div>
-            <div className="text-[11px] text-text-dim mt-1">{t('shortlist.select.sub')}</div>
-          </div>
-        )}
-      </aside>
+      {filtered.length === 0 ? (
+        <div
+          style={{
+            padding: 40,
+            textAlign: 'center',
+            color: 'var(--ink-3)',
+            fontStyle: 'italic',
+          }}
+        >
+          {t('shortlist.empty')}
+        </div>
+      ) : (
+        <div className="target-grid">
+          {filtered.map((p) => (
+            <TargetCard
+              key={p.id}
+              player={p}
+              already={teamedIds.has(p.id)}
+              onAdd={handleAdd}
+              addLabel={t('shortlist.add')}
+              alreadyLabel={t('shortlist.alreadyAdded')}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function FilterSection({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-5">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">{label}</div>
-      {children}
-    </div>
-  );
-}
-
-function RadioChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`text-left px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors border ${
-        active
-          ? 'bg-accent/15 text-accent border-accent/40'
-          : 'bg-surface-2 text-text-secondary border-border-subtle hover:bg-surface-3'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function NumInput({
-  value,
-  onChange,
-  min,
-  max,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  min: number;
-  max: number;
-}) {
-  return (
-    <input
-      type="number"
-      min={min}
-      max={max}
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      className="w-16 bg-surface-2 border border-border-subtle rounded-md px-2 py-1 text-xs text-text-primary text-center focus:outline-none focus:border-accent"
-    />
-  );
-}
-
-// Memoized candidate card. Keeps the grid from re-rendering all ~N cards on
-// every selection toggle — only the two cards whose `selected` flag flipped.
-type CandidateCardProps = {
-  player: Player;
-  selected: boolean;
-  already: boolean;
-  ageSuffix: string;
-  addLabel: string;
-  alreadyLabel: string;
-  onSelect: (id: string | null) => void;
-  onAdd: (id: string) => void;
-};
-
-const CandidateCard = memo(function CandidateCard({
+const TargetCard = memo(function TargetCard({
   player,
-  selected,
   already,
-  ageSuffix,
+  onAdd,
   addLabel,
   alreadyLabel,
-  onSelect,
-  onAdd,
-}: CandidateCardProps) {
-  const avatar = player.avatarColor ?? '#1e40af';
-  const rating = player.baseRating;
+}: {
+  player: Player;
+  already: boolean;
+  onAdd: (id: string) => void;
+  addLabel: string;
+  alreadyLabel: string;
+}) {
+  const passport = getPassportTag(player);
+  const prio = priorityOf(player);
+  const scout = scoutScoreOf(player);
+  const fit = fitScoreOf(player);
+  const reports = reportsFor(player);
+  const lastSeen = lastSeenFor(player);
+
   return (
-    <div
-      className={`rounded-lg p-3 border-2 transition-all duration-150 ${
-        selected ? 'bg-accent/10' : 'bg-surface-1 hover:bg-surface-2'
-      }`}
-      style={{ borderColor: selected ? 'var(--accent)' : getPassportBorder(player) }}
-    >
-      <div className="flex items-center gap-2.5">
+    <div className={`target-card ${prio} pp-card-${passport}`}>
+      <div className="priority-bar" />
+      <div className="target-head">
+        <div>
+          <div className="target-name">
+            <span style={{ marginRight: 8, fontSize: 18 }}>{player.flag}</span>
+            {player.firstName} {player.lastName}
+          </div>
+          <div className="target-meta">
+            {player.club} · {player.league} · {player.age}y · {player.primaryPosition}
+          </div>
+        </div>
+        <div className="target-ovr-block">
+          <div className="target-ovr">{player.baseRating}</div>
+          <div className="target-pot mono">→ <b>{player.potential}</b> POT</div>
+        </div>
+      </div>
+
+      <div className="score-pair">
+        <div className="score">
+          <div className="lbl">Scout</div>
+          <div className="v acc">{scout}</div>
+        </div>
+        <div className="score">
+          <div className="lbl">Fit</div>
+          <div className="v">{fit}</div>
+        </div>
+      </div>
+
+      <div className="target-notes">{notesFor(player)}</div>
+
+      <div className="target-foot">
+        <span className={`tag ${prio}`}>
+          {prio === 'hot' ? 'Hot' : prio === 'warm' ? 'Warm' : 'Cold'}
+        </span>
+        <span>
+          €{player.marketValue.toFixed(1)}M · {player.contractEnds}
+        </span>
+        <span>
+          {reports} reports · {lastSeen}
+        </span>
+      </div>
+
+      <div className="btn-row">
         <button
-          onClick={() => onSelect(selected ? null : player.id)}
-          className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
-        >
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shrink-0 text-[11px]"
-            style={{
-              background: `radial-gradient(circle at 35% 35%, ${avatar}dd, ${avatar}88)`,
-              border: `1px solid ${avatar}60`,
-            }}
-          >
-            {player.primaryPosition}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1 text-xs font-semibold text-text-primary truncate">
-              <span>{player.flag}</span>
-              <span className="truncate">{player.name}</span>
-            </div>
-            <div className="text-[10px] text-text-muted truncate">
-              {player.club} · {player.league}
-            </div>
-            <div className="text-[10px] text-text-dim">
-              {player.age} {ageSuffix} · {player.nationality} · €{player.marketValue.toFixed(1)}M
-            </div>
-          </div>
-          <div
-            className="shrink-0 w-9 h-9 rounded-md flex items-center justify-center text-sm font-black score-number"
-            style={{
-              color: getScoreColor(rating),
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.05)',
-            }}
-          >
-            {rating}
-          </div>
-        </button>
-        <button
+          type="button"
+          className={already ? 'btn ghost' : 'btn primary'}
           onClick={() => !already && onAdd(player.id)}
           disabled={already}
           title={already ? alreadyLabel : addLabel}
-          className={`shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-base font-black transition-colors ${
-            already
-              ? 'bg-surface-3 text-text-dim cursor-not-allowed border border-border-subtle'
-              : 'bg-accent/15 text-accent border border-accent/40 hover:bg-accent/25'
-          }`}
         >
-          {already ? '✓' : '+'}
+          {already ? `✓ ${alreadyLabel}` : `+ ${addLabel}`}
         </button>
       </div>
     </div>

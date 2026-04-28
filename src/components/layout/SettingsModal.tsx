@@ -6,6 +6,11 @@ import { useSquad } from '@/context/SquadContext';
 import { useT } from '@/context/I18nContext';
 import { FORMATIONS } from '@/data/formations';
 import { TacticalPanel } from '@/components/tactical/TacticalPanel';
+import {
+  COLUMN_LABEL_KEYS,
+  COLUMN_ORDER,
+  useColumnPrefs,
+} from '@/context/ColumnPrefsContext';
 import type { FormationName } from '@/types';
 
 interface Props {
@@ -15,6 +20,7 @@ interface Props {
 
 export function SettingsModal({ open, onClose }: Props) {
   const { state, setFormation } = useSquad();
+  const { prefs, setColumn, resetColumns } = useColumnPrefs();
   const t = useT();
   const [mounted, setMounted] = useState(false);
 
@@ -28,7 +34,6 @@ export function SettingsModal({ open, onClose }: Props) {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    // lock scroll while modal is open
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -40,52 +45,36 @@ export function SettingsModal({ open, onClose }: Props) {
   if (!open || !mounted) return null;
 
   const modal = (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-      onMouseDown={onClose}
-    >
-      {/* backdrop */}
-      <div
-        className="absolute inset-0"
-        style={{ background: 'rgba(0, 0, 0, 0.35)' }}
-        aria-hidden
-      />
-
-      {/* panel */}
+    <div className="modal-bg" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t('settings.title')}
-        className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-modal border border-border-subtle shadow-2xl overflow-hidden"
-        style={{ background: 'var(--surface-1)' }}
+        className="modal"
+        style={{ maxHeight: '85vh', width: 'min(560px, 92vw)' }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border-subtle">
-          <div className="flex items-center gap-2">
-            <span aria-hidden className="text-base">⚙️</span>
-            <h2 className="text-sm font-bold text-text-primary tracking-wide">
-              {t('settings.title')}
-            </h2>
+        <div className="modal-head">
+          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink-0)' }}>
+            {t('settings.title')}
           </div>
           <button
             type="button"
+            className="icon-btn"
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:bg-surface-3 hover:text-text-primary transition-colors"
             aria-label={t('settings.close')}
           >
-            ✕
+            ×
           </button>
         </div>
 
-        {/* body (scrollable) */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 space-y-6">
+        <div
+          className="modal-body"
+          style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}
+        >
           {/* Formation */}
-          <div>
-            <div className="text-[11px] uppercase tracking-widest font-bold text-text-muted mb-2.5">
-              {t('settings.formation')}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
+          <Section title={t('settings.formation')}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
               {FORMATIONS.map((f) => {
                 const active = state.formation === f.id;
                 return (
@@ -93,32 +82,153 @@ export function SettingsModal({ open, onClose }: Props) {
                     key={f.id}
                     type="button"
                     onClick={() => setFormation(f.id as FormationName)}
-                    className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-[13px] font-semibold border transition-all duration-150 ${
-                      active
-                        ? 'text-white border-transparent'
-                        : 'bg-surface-3 text-text-secondary border-border-subtle hover:bg-surface-4 hover:text-text-primary'
-                    }`}
-                    style={active ? { background: '#3b82f6', boxShadow: '0 0 10px #3b82f640' } : {}}
+                    className={active ? 'btn primary' : 'btn'}
+                    style={{
+                      flex: 0,
+                      padding: '10px 14px',
+                      fontFamily: 'var(--font-mono)',
+                      letterSpacing: '0.04em',
+                    }}
                   >
-                    <span className="font-mono tracking-wider">{f.displayName}</span>
-                    {active && <span className="text-[10px]">✓</span>}
+                    {f.displayName}
                   </button>
                 );
               })}
             </div>
-          </div>
+          </Section>
+
+          {/* Position-table columns */}
+          <Section
+            title={t('settings.columns.title')}
+            hint={t('settings.columns.hint')}
+            action={
+              <button
+                type="button"
+                onClick={resetColumns}
+                style={{
+                  background: 'none',
+                  border: 0,
+                  color: 'var(--ink-3)',
+                  fontSize: 10,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('settings.columns.reset')}
+              </button>
+            }
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+              {COLUMN_ORDER.map((key) => (
+                <ColumnRow
+                  key={key}
+                  label={t(COLUMN_LABEL_KEYS[key])}
+                  checked={prefs[key]}
+                  onToggle={(v) => setColumn(key, v)}
+                />
+              ))}
+            </div>
+          </Section>
 
           {/* Tactics */}
-          <div className="pt-2 border-t border-border-subtle">
-            <div className="text-[11px] uppercase tracking-widest font-bold text-text-muted mb-3 mt-3">
-              {t('squad.tactics')}
-            </div>
+          <Section title={t('squad.tactics')}>
             <TacticalPanel />
-          </div>
+          </Section>
         </div>
       </div>
     </div>
   );
 
   return createPortal(modal, document.body);
+}
+
+function Section({
+  title,
+  hint,
+  action,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: hint ? 4 : 12 }}>
+        <div
+          style={{
+            fontSize: 10,
+            textTransform: 'uppercase',
+            letterSpacing: '0.14em',
+            fontWeight: 600,
+            color: 'var(--ink-3)',
+          }}
+        >
+          {title}
+        </div>
+        {action}
+      </div>
+      {hint && <div style={{ fontSize: 11, color: 'var(--ink-3)', marginBottom: 10 }}>{hint}</div>}
+      {children}
+    </div>
+  );
+}
+
+function ColumnRow({
+  label,
+  checked,
+  onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  onToggle: (v: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(!checked)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        padding: '8px 10px',
+        background: checked ? 'rgba(255,212,0,0.08)' : 'var(--bg-2)',
+        border: `1px solid ${checked ? 'rgba(255,212,0,0.40)' : 'var(--line)'}`,
+        borderRadius: 6,
+        cursor: 'pointer',
+        color: 'var(--ink-0)',
+        fontSize: 12,
+      }}
+    >
+      <span>{label}</span>
+      <span
+        aria-hidden
+        style={{
+          width: 30,
+          height: 16,
+          borderRadius: 9,
+          background: checked ? 'var(--celje-yellow)' : 'var(--bg-4)',
+          position: 'relative',
+          transition: 'background 150ms',
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            position: 'absolute',
+            top: 2,
+            left: checked ? 16 : 2,
+            width: 12,
+            height: 12,
+            borderRadius: '50%',
+            background: checked ? 'var(--accent-ink)' : 'var(--ink-1)',
+            transition: 'left 150ms',
+          }}
+        />
+      </span>
+    </button>
+  );
 }
