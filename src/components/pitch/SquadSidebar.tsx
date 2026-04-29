@@ -156,7 +156,7 @@ export function SquadSidebar() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Tabs */}
       <div className="col-head">
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
           <TabButton label={t('roster.tab.club')} active={tab === 'club'} onClick={() => setTab('club')} />
           <TabButton label={t('roster.tab.shortlist')} active={tab === 'shortlist'} onClick={() => setTab('shortlist')} count={shortlistPlayers.length} />
         </div>
@@ -192,8 +192,8 @@ export function SquadSidebar() {
               gap: 6,
               padding: '6px 10px',
               borderRadius: 4,
-              background: 'rgba(255,212,0,0.10)',
-              border: '1px solid rgba(255,212,0,0.30)',
+              background: 'rgba(250,140,22,0.10)',
+              border: '1px solid rgba(250,140,22,0.30)',
             }}
           >
             <span
@@ -315,9 +315,9 @@ export function SquadSidebar() {
                       fontSize: 10,
                       ...(foot === f
                         ? {
-                            background: 'rgba(255,212,0,0.18)',
+                            background: 'rgba(250,140,22,0.18)',
                             color: 'var(--celje-yellow)',
-                            borderColor: 'rgba(255,212,0,0.50)',
+                            borderColor: 'rgba(250,140,22,0.50)',
                           }
                         : {}),
                     }}
@@ -705,9 +705,9 @@ function MultiSelectDropdown<T extends string>({
                   padding: '0 4px',
                   fontSize: 10,
                   fontWeight: 600,
-                  background: 'rgba(255,212,0,0.16)',
+                  background: 'rgba(250,140,22,0.16)',
                   color: 'var(--celje-yellow)',
-                  border: '1px solid rgba(255,212,0,0.40)',
+                  border: '1px solid rgba(250,140,22,0.40)',
                   borderRadius: 3,
                 }}
               >
@@ -767,7 +767,7 @@ function MultiSelectDropdown<T extends string>({
                     padding: '6px 10px',
                     fontSize: 11,
                     textAlign: 'left',
-                    background: active ? 'rgba(255,212,0,0.10)' : 'transparent',
+                    background: active ? 'rgba(250,140,22,0.10)' : 'transparent',
                     color: active ? 'var(--celje-yellow)' : 'var(--ink-1)',
                     border: 0,
                     cursor: 'pointer',

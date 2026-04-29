@@ -9,9 +9,9 @@
 :root,
 [data-theme='dark'] {
   /* Brand */
-  --celje-yellow: #FFD400;
-  --celje-yellow-2: #F5C400;
-  --celje-yellow-soft: #FFE873;
+  --celje-yellow: #fa8c16;
+  --celje-yellow-2: #e07a0f;
+  --celje-yellow-soft: #ffae5c;
 
   /* Surfaces (Algorythm dark) */
   --bg-0: #0B0E14;
@@ -59,7 +59,7 @@
   --accent: var(--celje-yellow);
   --accent-bright: var(--celje-yellow-soft);
   --accent-dim: var(--celje-yellow-2);
-  --accent-glow: rgba(255, 212, 0, 0.35);
+  --accent-glow: rgba(250, 140, 22, 0.35);
 
   --cyan: var(--info);
   --cyan-bright: #8FC8FF;
@@ -68,7 +68,7 @@
   --gold: var(--celje-yellow);
   --gold-bright: var(--celje-yellow-soft);
   --gold-dim: var(--celje-yellow-2);
-  --gold-glow: rgba(255, 212, 0, 0.4);
+  --gold-glow: rgba(250, 140, 22, 0.4);
 
   --score-elite: var(--celje-yellow);
   --score-good: var(--good);
@@ -124,8 +124,8 @@
   --card-bg-b: rgba(247,248,250,1);
   --glass-bg: rgba(255,255,255,0.9);
 
-  --accent-glow: rgba(255, 212, 0, 0.45);
-  --gold-glow: rgba(255, 212, 0, 0.45);
+  --accent-glow: rgba(250, 140, 22, 0.45);
+  --gold-glow: rgba(250, 140, 22, 0.45);
 }
 
 * { box-sizing: border-box; }
@@ -229,14 +229,14 @@ input[type='range']::-moz-range-thumb {
 .drop-target {
   outline: 2px dashed var(--celje-yellow);
   outline-offset: 4px;
-  background: rgba(255, 212, 0, 0.12);
+  background: rgba(250, 140, 22, 0.12);
   border-radius: 12px;
   transition: all 0.1s ease;
 }
 .drop-target-active {
   outline: 2.5px solid var(--celje-yellow);
   outline-offset: 4px;
-  background: rgba(255, 212, 0, 0.2);
+  background: rgba(250, 140, 22, 0.2);
 }
 
 @layer utilities {
@@ -453,7 +453,7 @@ select option {
 }
 .prow:hover { background: var(--bg-2); }
 .prow.active {
-  background: linear-gradient(90deg, rgba(255,212,0,0.10), transparent 70%);
+  background: linear-gradient(90deg, rgba(250,140,22,0.10), transparent 70%);
 }
 .prow.active::before {
   content: "";
@@ -617,7 +617,7 @@ select option {
 }
 .token.selected .disc {
   border-color: var(--celje-yellow);
-  box-shadow: 0 0 0 4px rgba(255,212,0,0.18);
+  box-shadow: 0 0 0 4px rgba(250,140,22,0.18);
   transform: scale(1.06);
 }
 .token .name {
@@ -729,7 +729,7 @@ select option {
 }
 .ptable.selected-slot {
   border-color: var(--celje-yellow);
-  box-shadow: 0 0 0 2px rgba(255, 212, 0, 0.25), 0 6px 20px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 2px rgba(250, 140, 22, 0.25), 0 6px 20px rgba(0, 0, 0, 0.55);
 }
 .ptable-head {
   display: flex;
@@ -792,13 +792,13 @@ select option {
 }
 .ptable-chip.injury    { color: var(--bad);  border-color: rgba(255,107,107,0.32); }
 .ptable-chip.loan      { color: var(--info); border-color: rgba(111,181,255,0.32); }
-.ptable-chip.extend    { color: var(--celje-yellow); border-color: rgba(255,212,0,0.40); }
+.ptable-chip.extend    { color: var(--celje-yellow); border-color: rgba(250,140,22,0.40); }
 .ptable-chip.terminate { color: var(--bad);  border-color: rgba(255,107,107,0.32); }
 .ptable-chip.salary    { color: var(--ink-1); }
 .ptable-chip.contract  { color: var(--ink-2); }
 .ptable-row:hover { background: var(--bg-2); }
-.ptable-row.starter { background: rgba(255, 212, 0, 0.04); }
-.ptable-row.starter:hover { background: rgba(255, 212, 0, 0.08); }
+.ptable-row.starter { background: rgba(250, 140, 22, 0.04); }
+.ptable-row.starter:hover { background: rgba(250, 140, 22, 0.08); }
 .ptable-row.active { box-shadow: inset 2px 0 0 var(--celje-yellow); }
 
 /* "Want to extend" — solid yellow row with dark contrast text, mirroring the
@@ -1293,7 +1293,7 @@ select option {
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.tag.hot  { background: rgba(255,212,0,0.12); color: var(--celje-yellow); }
+.tag.hot  { background: rgba(250,140,22,0.12); color: var(--celje-yellow); }
 .tag.warm { background: rgba(111,181,255,0.18); color: var(--info); }
 .tag.cold { background: var(--bg-3); color: var(--ink-3); }
 
