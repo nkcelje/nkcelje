@@ -809,7 +809,14 @@ select option {
 }
 .ptable-row.want-extend:hover { background: var(--celje-yellow-soft); }
 
-.ptable-row.want-terminate  { /* no bg, text is recoloured below */ }
+/* "Want to terminate" — same logic but in alarm red. White text + tinted
+   chips so secondary indicators stay legible against the saturated bg. */
+.ptable-row.want-terminate {
+  background: #c1383d;
+  color: #fff;
+}
+.ptable-row.want-terminate:hover { background: #d4474c; }
+
 .ptable-row.loan-return     { background: rgba(79, 163, 255, 0.14); }
 .ptable-row.injury .ptable-name {
   text-decoration: line-through;
@@ -826,7 +833,24 @@ select option {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ptable-row.want-terminate .ptable-name { color: var(--bad); }
+/* Want-terminate row: white text + chips with dark backing for legibility. */
+.ptable-row.want-terminate .ptable-name        { color: #fff; font-weight: 700; }
+.ptable-row.want-terminate .ptable-cell        { color: rgba(255, 255, 255, 0.92); }
+.ptable-row.want-terminate .ptable-cell.rating { color: #fff !important; }
+.ptable-row.want-terminate .ptable-row-extras  { color: rgba(255, 255, 255, 0.88); }
+.ptable-row.want-terminate .ptable-chip {
+  background: rgba(0, 0, 0, 0.22);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+.ptable-row.want-terminate .ptable-chip.injury    { color: #ffd1d1; }
+.ptable-row.want-terminate .ptable-chip.loan      { color: #c3d9ff; }
+.ptable-row.want-terminate .ptable-chip.extend    { color: #ffd08a; }
+.ptable-row.want-terminate .ptable-chip.terminate {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.32);
+  font-weight: 700;
+}
 
 /* Want-extend row: dark text on bright yellow row (overrides per-element rules). */
 .ptable-row.want-extend .ptable-name        { color: var(--accent-ink); font-weight: 700; }
