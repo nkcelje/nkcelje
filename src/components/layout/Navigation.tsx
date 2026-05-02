@@ -10,8 +10,10 @@ import { SettingsModal } from './SettingsModal';
 
 const NAV_ITEMS: { href: string; numKey: string; labelKey: string }[] = [
   { href: '/', numKey: '01', labelKey: 'nav.squad' },
-  { href: '/shortlist', numKey: '02', labelKey: 'nav.shortlist' },
-  { href: '/comparison', numKey: '03', labelKey: 'nav.comparison' },
+  { href: '/celje', numKey: '02', labelKey: 'nav.celje' },
+  { href: '/shortlist', numKey: '03', labelKey: 'nav.shortlist' },
+  { href: '/comparison', numKey: '04', labelKey: 'nav.comparison' },
+  { href: '/data', numKey: '05', labelKey: 'nav.data' },
 ];
 
 export function Navigation() {

@@ -38,3 +38,8 @@ next-env.d.ts
 .vscode/
 .idea/
 docs
+
+# SQLite WAL/journal files (commit only the main .db)
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm

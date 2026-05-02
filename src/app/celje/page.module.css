@@ -1,0 +1,357 @@
+.page {
+  padding: 24px 32px 48px;
+  max-width: 1400px;
+  margin: 0 auto;
+  color: var(--ink-0);
+  font-family: var(--font-sans);
+}
+
+/* ─── Hero header ───────────────────────────────────────── */
+.heroHeader {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 28px;
+  padding: 22px;
+  background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  margin-bottom: 28px;
+}
+
+.heroLeft {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heroLogo {
+  width: 96px;
+  height: 96px;
+  border-radius: 12px;
+  background: white;
+  padding: 8px;
+  border: 2px solid var(--line);
+}
+
+.heroLogoFallback {
+  width: 96px;
+  height: 96px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 1px;
+  color: var(--accent-ink);
+}
+
+.heroBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heroSubtle {
+  font-size: 12px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.heroName {
+  font-family: var(--font-display);
+  font-size: 48px;
+  letter-spacing: 1.5px;
+  margin: 0;
+  color: var(--ink-0);
+  line-height: 1;
+}
+
+.heroOfficial {
+  font-size: 14px;
+  color: var(--ink-2);
+  margin-top: 2px;
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.meta {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  padding: 8px 12px;
+  min-width: 110px;
+}
+
+.metaAccent {
+  border-color: var(--celje-yellow);
+  background: rgba(250, 140, 22, 0.08);
+}
+
+.metaLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink-3);
+  margin-bottom: 2px;
+}
+
+.metaValue {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-0);
+}
+
+.metaAccent .metaValue {
+  color: var(--celje-yellow);
+}
+
+/* ─── Sections ──────────────────────────────────────────── */
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 1px;
+  margin: 0 0 14px;
+  color: var(--ink-1);
+  text-transform: uppercase;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.sectionHead .sectionTitle {
+  margin: 0;
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Stat grid ─────────────────────────────────────────── */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.statCard {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 12px 14px;
+}
+
+.statLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink-0);
+}
+
+.statGood { color: var(--good); }
+.statBad { color: var(--bad); }
+
+/* ─── Roster ───────────────────────────────────────────── */
+.posGroup {
+  margin-bottom: 22px;
+}
+
+.posGroupTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--celje-yellow);
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.posCount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.tableWrap {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  overflow-x: auto;
+}
+
+.rosterTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.rosterTable th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ink-3);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+
+.rosterTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.row:hover {
+  background: var(--bg-2);
+}
+
+.row:last-child td {
+  border-bottom: none;
+}
+
+.cellNum {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  width: 50px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cellPhoto {
+  width: 44px;
+  padding: 4px 0 4px 12px;
+}
+
+.photo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+
+.photoFallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+
+.cellName {
+  min-width: 180px;
+}
+
+.nameLink {
+  color: var(--ink-0);
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.nameLink:hover {
+  color: var(--celje-yellow);
+  border-bottom-color: var(--celje-yellow);
+}
+
+.cellPos { color: var(--ink-1); }
+.cellNumeric { font-family: var(--font-mono); color: var(--ink-1); }
+
+.subtle {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+/* ─── Status dots ──────────────────────────────────────── */
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotGood { background: var(--good); }
+.dotInjured { background: var(--bad); }
+
+/* ─── Rating colors ───────────────────────────────────── */
+.ratingElite { color: var(--celje-yellow); font-weight: 700; }
+.ratingGood { color: var(--good); font-weight: 600; }
+.ratingMid { color: var(--info); }
+.ratingPoor { color: var(--ink-3); }
+
+/* ─── Empty state ──────────────────────────────────────── */
+.empty {
+  padding: 60px 32px;
+  text-align: center;
+  color: var(--ink-2);
+}
+
+.empty h1 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  margin: 0 0 12px;
+}
+
+.empty code {
+  font-family: var(--font-mono);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  padding: 2px 8px;
+  border-radius: var(--radius-s);
+  color: var(--ink-1);
+  font-size: 12px;
+}

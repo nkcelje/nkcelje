@@ -16,8 +16,10 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     // Nav
     'nav.squad': 'Состав',
     'nav.players': 'Игроки',
+    'nav.celje': 'Целе',
     'nav.shortlist': 'Шортлист',
     'nav.comparison': 'Сравнение',
+    'nav.data': 'Данные',
 
     // Theme / Lang
     'theme.toggle.toLight': 'Переключить на светлую тему',
@@ -359,8 +361,10 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
     'nav.squad': 'Squad Builder',
     'nav.players': 'Players',
+    'nav.celje': 'Celje',
     'nav.shortlist': 'Shortlist',
     'nav.comparison': 'Compare',
+    'nav.data': 'Data',
 
     'theme.toggle.toLight': 'Switch to light theme',
     'theme.toggle.toDark': 'Switch to dark theme',
@@ -678,8 +682,10 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
     'nav.squad': 'Sestava',
     'nav.players': 'Igralci',
+    'nav.celje': 'Celje',
     'nav.shortlist': 'Ožji izbor',
     'nav.comparison': 'Primerjava',
+    'nav.data': 'Podatki',
 
     'theme.toggle.toLight': 'Preklopi na svetlo temo',
     'theme.toggle.toDark': 'Preklopi na temno temo',
