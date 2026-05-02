@@ -602,7 +602,7 @@ export function getCeljeRoster(): RosterPlayer[] {
       sp.player_id, sp.name, sp.position AS pos_group, sp.positions_detailed,
       sp.height, sp.preferred_foot, sp.jersey_number, sp.date_of_birth,
       pim.tm_id,
-      tm.market_value AS tm_mv, tm.club_contract_expires, tm.image_url,
+      tm.market_value AS tm_mv, tm.club_contract_expires, tm.image_url, tm.shirt_number AS tm_shirt_number,
       tm.position_main AS tm_pos, tm.citizenship AS tm_citizenship,
       pss.appearances, pss.matches_started, pss.minutes_played, pss.rating,
       pss.goals, pss.assists, pss.goals_assists_sum,
@@ -627,7 +627,7 @@ export function getCeljeRoster(): RosterPlayer[] {
     name: r.name,
     positionGroup: r.pos_group,
     positionsDetailed: r.positions_detailed ? safeJsonArray(r.positions_detailed) : [],
-    jerseyNumber: r.jersey_number,
+    jerseyNumber: parseJersey(r.tm_shirt_number, r.jersey_number),
     height: r.height,
     preferredFoot: r.preferred_foot,
     dateOfBirth: r.date_of_birth,
@@ -785,6 +785,18 @@ function computeMatchAggregate(playerId: number): PlayerMatchAggregate | null {
       goals: s.goals,
     })),
   };
+}
+
+// Transfermarkt stores jersey numbers as "#20"; Sofascore as plain int (often null).
+function parseJersey(tmShirt: string | null, sfNumber: number | null): number | null {
+  if (tmShirt) {
+    const digits = tmShirt.replace(/\D+/g, "");
+    if (digits) {
+      const n = parseInt(digits, 10);
+      if (!isNaN(n)) return n;
+    }
+  }
+  return sfNumber ?? null;
 }
 
 function safeJsonArray(s: string): string[] {

@@ -11,9 +11,10 @@ const EU_NATIONALITIES = new Set<string>([
   'Polish', 'Portuguese', 'Romanian', 'Slovakian', 'Slovak', 'Spanish', 'Swedish',
 ]);
 
-// Players who are Slovenian by nationality in the dataset but should be treated
-// as holding an additional EU passport for squad-rules purposes.
-const EU_OVERRIDE_IDS = new Set<string>(['leban']);
+// Players who hold a second EU passport in addition to their primary
+// nationality (e.g. dual citizenship). Use the player.id slug from
+// players.generated.ts.
+const EU_OVERRIDE_IDS = new Set<string>(['zan-luk-leban']);
 
 export function getPassportStatus(player: { id: string; nationality: string }): PassportStatus {
   if (EU_OVERRIDE_IDS.has(player.id)) return 'eu';

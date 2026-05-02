@@ -109,6 +109,8 @@ export interface Player {
   isCaptain?: boolean;
   avatarColor?: string;  // for avatar placeholder
   photoUrl?: string;
+  /** Sofascore player ID — used to link to /celje/players/[id] profile. */
+  sofascoreId?: number;
 }
 
 // ─── Formation ───────────────────────────────────────────────────────────────

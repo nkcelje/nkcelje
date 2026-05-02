@@ -11,8 +11,10 @@ import type {
   SquadState,
   FormationName,
   TacticalSettings,
+  Player,
+  Position,
 } from '@/types';
-import { getPlayerById } from '@/data/players';
+import { getPlayerById, PLAYERS } from '@/data/players';
 import { getFormationById } from '@/data/formations';
 import {
   recomputeFromScratch,
@@ -39,34 +41,48 @@ const DEFAULT_TACTICS: TacticalSettings = {
 
 // ─── Default Lineup ───────────────────────────────────────────────────────────
 
-// 4-3-3 starting XI — taken literally from the recruitment screenshot the
-// user shared: each starter is the player at the top of their column.
-// Karničnik shifts to LB (top of LB column), Nieto becomes the RB starter,
-// Tutyškinas leads CB-left, Pranjić takes the LW slot, Iosifov the right.
-const DEFAULT_LINEUP: Record<string, string | null> = {
-  gk: 'leban',
-  lb: 'karnicnik',
-  'cb-l': 'tutyskinas',
-  'cb-r': 'bejger',
-  rb: 'nieto',
-  cdm: 'zabukovnik',
-  'cm-l': 'kvesic',
-  'cm-r': 'seslar',
-  lw: 'pranjic',
-  st: 'kucys',
-  rw: 'iosifov',
-};
+// 4-3-3 starting XI is built dynamically from the live PLAYERS list
+// (sorted by Sofascore rating × 10 = baseRating), so the lineup stays in sync
+// with data/scouting.db without hard-coded slugs.
+function buildDefaultSquad(formationId: FormationName): {
+  lineup: Record<string, string | null>;
+  bench: string[];
+} {
+  const formation = getFormationById(formationId);
+  if (!formation) return { lineup: {}, bench: [] };
 
-const DEFAULT_BENCH = [
-  // GK reserves
-  'sluga', 'kolar',
-  // Defenders
-  'tutyskinas', 'vuklisevic', 'nieto', 'vodeb',
-  // Midfielders
-  'hrka', 'kotnik', 'pranjic', 'pozeg-vancas', 'calusic', 'papa-daniel', 'jevsenak', 'vidovic',
-  // Attackers
-  'poplatnik',
-];
+  // Higher baseRating first; tie-break by name for stability across re-runs.
+  const ranked = [...PLAYERS].sort((a, b) => {
+    if (b.baseRating !== a.baseRating) return b.baseRating - a.baseRating;
+    return a.name.localeCompare(b.name);
+  });
+  const taken = new Set<string>();
+  const lineup: Record<string, string | null> = {};
+
+  for (const slot of formation.slots) {
+    const slotRole = slot.role as Position;
+    const eligible = (p: Player): boolean =>
+      p.primaryPosition === slotRole || p.secondaryPositions.includes(slotRole);
+
+    let candidate =
+      ranked.find((p) => !taken.has(p.id) && p.primaryPosition === slotRole) ??
+      ranked.find((p) => !taken.has(p.id) && eligible(p)) ??
+      ranked.find((p) => !taken.has(p.id)) ??
+      null;
+
+    if (candidate) {
+      lineup[slot.id] = candidate.id;
+      taken.add(candidate.id);
+    } else {
+      lineup[slot.id] = null;
+    }
+  }
+
+  const bench = ranked.filter((p) => !taken.has(p.id)).map((p) => p.id);
+  return { lineup, bench };
+}
+
+const { lineup: DEFAULT_LINEUP, bench: DEFAULT_BENCH } = buildDefaultSquad('4-3-3');
 
 // ─── State Computation ────────────────────────────────────────────────────────
 
